@@ -1,6 +1,7 @@
 package com.visualfiredev.javabase;
 
 import com.visualfiredev.javabase.schema.ColumnSchema;
+import com.visualfiredev.javabase.schema.TableSchema;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -141,16 +142,15 @@ public class Database {
     }
 
     /**
-     * Creates a table (depending on if it exists or not) using the specified columns.
+     * Creates a table (depending on if it exists or not) using the specified {@link com.visualfiredev.javabase.schema.TableSchema}.
      * TODO: Make this return a "table" object and not void
      *
-     * @param ifNotExists Equivalent to the "if not exists" statement in CREATE TABLE IF NOT EXISTS.
-     * @param columns The columns that this table should have.
+     * @param tableSchema The {@link com.visualfiredev.javabase.schema.TableSchema} the table should be based on.
      * @throws NotConnectedException Thrown if there is no connection to the database.
      * @throws SQLException Thrown if creating the table failed.
-     * @throws UnsupportedDatabaseTypeException Thrown if any of the {@link com.visualfiredev.javabase.schema.ColumnSchema}'s passed do not support this type of database.
+     * @throws UnsupportedDatabaseTypeException Thrown if any {@link com.visualfiredev.javabase.schema.ColumnSchema}'s do not support this type of database.
      */
-    public void createTable(String name, boolean ifNotExists, ColumnSchema... columns) throws NotConnectedException, SQLException, UnsupportedDatabaseTypeException {
+    public void createTable(TableSchema tableSchema) throws NotConnectedException, SQLException, UnsupportedDatabaseTypeException {
         // Ensure Connected
         if (!this.isConnected()) {
             throw new NotConnectedException();
@@ -159,44 +159,17 @@ public class Database {
         // Create Statement
         Statement statement = connection.createStatement();
 
-        // Build MySQL Statement
-        StringBuilder sql = new StringBuilder("CREATE TABLE");
+        // Create SQL
+        String sql = tableSchema.toString(type);
 
-        // If Not Exists
-        if (ifNotExists) {
-            sql.append(" IF NOT EXISTS ");
-        }
-
-        // Name
-        sql.append(name);
-
-        // Columns
-        sql.append(" ( ");
-        for (int i = 0; i < columns.length; i++) {
-            ColumnSchema column = columns[i];
-
-            // Confirm Support
-            if (!column.supportsDatabaseType(type)) {
-                throw new UnsupportedDatabaseTypeException(column.getDataType(), type);
-            }
-
-            // Append Name
-            sql.append(column.getName()).append(" ");
-
-            // Append DataType
-            sql.append(column.getDataType());
-
-            // Comma or Semicolon?
-            if (i != columns.length - 1) {
-                sql.append(", ");
-            }
-        }
-
-        // Close
-        sql.append(" );");
+        System.out.println(sql);
 
         // Execute
-        statement.executeUpdate(sql.toString());
+        try {
+            statement.executeUpdate(sql);
+        } catch (SQLException e) {
+            throw new SQLException("Invalid Table Schema! SQL Statement Created: " + sql, e);
+        }
     }
 
     // TODO: Create table like? God I have so much to work do...
