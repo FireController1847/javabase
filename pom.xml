@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <!-- Project Information -->
+    <name>Javabase</name>
+    <groupId>com.visualfiredev</groupId>
+    <artifactId>javabase</artifactId>
+    <version>1.0.0-SNAPSHOT</version>
+    <packaging>jar</packaging>
+
+    <!-- Project Properties -->
+    <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <maven.compiler.source>1.8</maven.compiler.source>
+        <maven.compiler.target>1.8</maven.compiler.target>
+        <fileVersion>INVALID</fileVersion>
+    </properties>
+
+    <!-- Project Profiles -->
+    <profiles>
+        <!-- Snapshot Profile -->
+        <profile>
+            <id>snapshot</id>
+            <properties>
+                <!--suppress UnresolvedMavenProperty -->
+                <fileVersion>${project.version}-SNAPSHOT-${git.commit.id.abbrev}</fileVersion>
+            </properties>
+        </profile>
+
+        <!-- Release Profile -->
+        <profile>
+            <id>release</id>
+            <properties>
+                <fileVersion>${project.version}</fileVersion>
+            </properties>
+        </profile>
+    </profiles>
+
+    <!-- Build -->
+    <build>
+        <finalName>Javabase-${fileVersion}</finalName>
+
+        <!-- Plugins -->
+        <plugins>
+
+            <!-- Git Commit ID Plugin -->
+            <plugin>
+                <groupId>pl.project13.maven</groupId>
+                <artifactId>git-commit-id-plugin</artifactId>
+                <version>4.0.0</version>
+                <executions>
+                    <execution>
+                        <phase>validate</phase>
+                        <goals>
+                            <goal>revision</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <!-- Maven Compiler Plugin -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.8.1</version>
+                <configuration>
+                    <source>${maven.compiler.source}</source>
+                    <target>${maven.compiler.target}</target>
+                </configuration>
+            </plugin>
+
+        </plugins>
+
+    </build>
+
+    <!-- Dependencies -->
+    <dependencies>
+
+        <!-- BUILD: Annotations -->
+        <dependency>
+            <groupId>org.jetbrains</groupId>
+            <artifactId>annotations</artifactId>
+            <version>20.1.0</version>
+            <scope>compile</scope>
+        </dependency>
+
+    </dependencies>
+    
+</project>
