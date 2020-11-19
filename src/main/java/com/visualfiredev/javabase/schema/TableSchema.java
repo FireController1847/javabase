@@ -2,6 +2,7 @@ package com.visualfiredev.javabase.schema;
 
 import com.visualfiredev.javabase.DatabaseType;
 import com.visualfiredev.javabase.UnsupportedDatabaseTypeException;
+import com.visualfiredev.javabase.UnsupportedFeatureException;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
@@ -64,6 +65,20 @@ public class TableSchema {
     }
 
     /**
+     * Fetches a ColumnSchema by its name.
+     * @param name The name of the ColumnSchema.
+     * @return The corresponding ColumnSchema or null if not found.
+     */
+    public ColumnSchema getColumn(String name) {
+        for (ColumnSchema column : columns) {
+            if (column.getName().equals(name)) {
+                return column;
+            }
+        }
+        return null;
+    }
+
+    /**
      * Sets whether or not this table should include "IF NOT EXISTS". Takes priority over "OR REPLACE"
      *
      * @param ifNotExists Whether or not this table should include "IF NOT EXISTS"
@@ -75,7 +90,8 @@ public class TableSchema {
     }
 
     /**
-     * Sets whether or not this table should include "OR REPLACE"
+     * Sets whether or not this table should include "OR REPLACE"<br>
+     * WARNING: Unsupported by SQLite.
      *
      * @param orReplace Whether or not this table should include "OR REPLACE"
      * @return The TableSchema.
@@ -124,8 +140,14 @@ public class TableSchema {
      * @param databaseType The {@link com.visualfiredev.javabase.DatabaseType} that this string should be made for.
      * @return The stringified version of this table schema.
      * @throws UnsupportedDatabaseTypeException Thrown if any of the {@link com.visualfiredev.javabase.schema.ColumnSchema}'s do not support this type of database.
+     * @throws UnsupportedFeatureException Thrown if a feature was enabled that this database does not support.
      */
-    public String toString(DatabaseType databaseType) throws UnsupportedDatabaseTypeException {
+    public String toString(DatabaseType databaseType) throws UnsupportedDatabaseTypeException, UnsupportedFeatureException {
+        // Validate Features
+        if (databaseType == DatabaseType.SQLite && orReplace) {
+            throw new UnsupportedFeatureException(databaseType, "CREATE TABLE OR REPLACE");
+        }
+
         // Create String
         StringBuilder sql = new StringBuilder("CREATE TABLE");
 

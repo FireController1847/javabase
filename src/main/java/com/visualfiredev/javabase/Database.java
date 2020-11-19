@@ -149,8 +149,9 @@ public class Database {
      * @throws NotConnectedException Thrown if there is no connection to the database.
      * @throws SQLException Thrown if creating the table failed.
      * @throws UnsupportedDatabaseTypeException Thrown if any {@link com.visualfiredev.javabase.schema.ColumnSchema}'s do not support this type of database.
+     * @throws UnsupportedFeatureException Thrown if a feature was enabled that this database does not support.
      */
-    public void createTable(TableSchema tableSchema) throws NotConnectedException, SQLException, UnsupportedDatabaseTypeException {
+    public void createTable(TableSchema tableSchema) throws NotConnectedException, SQLException, UnsupportedDatabaseTypeException, UnsupportedFeatureException {
         // Ensure Connected
         if (!this.isConnected()) {
             throw new NotConnectedException();
@@ -168,11 +169,79 @@ public class Database {
         try {
             statement.executeUpdate(sql);
         } catch (SQLException e) {
-            throw new SQLException("Invalid Table Schema! SQL Statement Created: " + sql, e);
+            throw new SQLException("Invalid TableSchema or possible library error! SQL Statement Created: " + sql, e);
         }
     }
 
     // TODO: Create table like? God I have so much to work do...
+
+    /**
+     * Inserts data into the specified table using the {@link com.visualfiredev.javabase.schema.TableSchema} and the specified {@link com.visualfiredev.javabase.DatabaseValue}s.
+     *
+     * @param table The table that this data should be inserted to.
+     * @param values The {@link com.visualfiredev.javabase.DatabaseValue}s that should be inserted.
+     * @throws NotConnectedException Thrown if there is no connection to the database.
+     * @throws SQLException Thrown if running the generated SQL statement failed.
+     */
+    public void insert(TableSchema table, DatabaseValue... values) throws NotConnectedException, SQLException {
+        // Ensure Connected
+        if (!this.isConnected()) {
+            throw new NotConnectedException();
+        }
+
+        // Create Statement
+        Statement statement = connection.createStatement();
+
+        // Create SQL
+        StringBuilder sql = new StringBuilder("INSERT INTO " + table.getName());
+
+        // Validate Column Names
+        for (DatabaseValue value : values) {
+            if (table.getColumn(value.getColumnName()) == null) {
+                throw new SQLException("Invalid column name provided!");
+            }
+        }
+
+        // Add Columns
+        sql.append("(");
+        for (int i = 0; i < values.length; i++) {
+            sql.append(values[i].getColumnName());
+
+            // Comma? Are there more?
+            if (i != values.length - 1) {
+                sql.append(", ");
+            }
+        }
+        sql.append(")");
+
+        // Add Values
+        sql.append(" VALUES(");
+        for (int i = 0; i < values.length; i++) {
+            Object data = values[i].getData();
+            if (data instanceof String) {
+                sql.append("'").append(String.valueOf(data).replace("'", "\\'")).append("'");
+            } else {
+                sql.append(data);
+            }
+
+            // Comma? Are there more?
+            if (i != values.length - 1) {
+                sql.append(", ");
+            }
+        }
+
+        // Close
+        sql.append(" );");
+
+        System.out.println(sql);
+
+        // Execute
+        try {
+            statement.executeUpdate(sql.toString());
+        } catch (SQLException e) {
+            throw new SQLException("Invalid DatabaseValues or possible library error! SQL Statement Created: " + sql, e);
+        }
+    }
 
     /**
      * Returns true if the database is connected, otherwise returns false.

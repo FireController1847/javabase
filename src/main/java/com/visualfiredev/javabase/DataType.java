@@ -1,5 +1,8 @@
 package com.visualfiredev.javabase;
 
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+
 /**
  * Contains an enum for every generic data type.
  * TODO: This is an incomplete list and needs to add support for far more data types.
@@ -213,7 +216,7 @@ public enum DataType {
      * @param typeIn The database type to compare.
      * @return True if this data type can be used in this database, false otherwise.
      */
-    public boolean supportsDatabaseType(DatabaseType typeIn) {
+    public boolean supportsDatabaseType(@NotNull DatabaseType typeIn) {
         for (int i = 0; i < supportedTypes.length; i++) {
             if (supportedTypes[i] == typeIn) {
                 return true;
@@ -223,9 +226,36 @@ public enum DataType {
     }
 
     /**
+     * Attempts to parse a data type from the given string.
+     *
+     * @param value The string to be parsed.
+     * @return The parsed DataType.
+     * @throws UnsupportedDataTypeException Thrown if the string was unable to be parsed to a DataType.
+     */
+    @NotNull
+    public static DataType parseDataType(@NotNull String value) throws UnsupportedDataTypeException {
+        try {
+            return DataType.valueOf(value);
+        } catch (Exception e) {
+            // Alias List!
+            if (value.equals("INT")) {
+                return DataType.INTEGER;
+            } else if (value.equals("DEC") || value.equals("FIXED")) {
+                return DataType.DECIMAL;
+            } else if (value.equals("NUMBER")) {
+                return DataType.DECIMAL;
+            } else if (value.equals("BOOLEAN")) {
+                return DataType.TINYINT;
+            }
+        }
+        throw new UnsupportedDataTypeException(value);
+    }
+
+    /**
      * Returns the supported database types for this data type.
      * @return The supported database types for this data type.
      */
+    @NotNull
     public DatabaseType[] getSupportedTypes() {
         return supportedTypes;
     }
