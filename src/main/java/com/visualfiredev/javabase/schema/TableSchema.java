@@ -137,14 +137,12 @@ public class TableSchema {
     /**
      * Converts this table schema to a "CREATE TABLE" sql string.
      *
-     * @param prefix The prefix that should be prepended before the name.
      * @param databaseType The {@link com.visualfiredev.javabase.DatabaseType} that this string should be made for.
      * @return The stringified version of this table schema.
      * @throws UnsupportedDatabaseTypeException Thrown if any of the {@link com.visualfiredev.javabase.schema.ColumnSchema}'s do not support this type of database.
      * @throws UnsupportedFeatureException Thrown if a feature was enabled that this database does not support.
      */
-    @NotNull
-    public String toString(@NotNull String prefix, @NotNull DatabaseType databaseType) throws UnsupportedDatabaseTypeException, UnsupportedFeatureException {
+    public String toString(DatabaseType databaseType) throws UnsupportedDatabaseTypeException, UnsupportedFeatureException {
         // Validate Features
         if (databaseType == DatabaseType.SQLite && orReplace) {
             throw new UnsupportedFeatureException(databaseType, "CREATE TABLE OR REPLACE");
@@ -158,11 +156,6 @@ public class TableSchema {
             sql.append("TABLE IF NOT EXISTS ");
         } else if (orReplace) {
             sql.append("OR REPLACE TABLE ");
-        }
-
-        // Prefix
-        if (!prefix.isEmpty()) {
-            sql.append(prefix);
         }
 
         // Name
