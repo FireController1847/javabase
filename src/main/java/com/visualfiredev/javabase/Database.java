@@ -7,10 +7,12 @@ import org.jetbrains.annotations.Nullable;
 import java.io.File;
 import java.io.IOException;
 import java.sql.*;
+import java.util.Date;
 import java.util.Properties;
 
 /**
  * A generic database that can be used for all database types.
+ * TODO: SQLite doesn't cache stuff for us, so we need to add some sort of transaction cache to improve speed.
  */
 public class Database {
 
@@ -22,6 +24,8 @@ public class Database {
 
     // Connection
     private Connection connection;
+    private long lastConnectionCheck;
+    private boolean isConnected;
 
     /**
      * Constructs a new database.
@@ -318,15 +322,24 @@ public class Database {
      *       may timeout instead of isConnected returning false, but I think that's a
      *       sacrifice I'm willing to make for the sake of performance.
      *
-     * @throws SQLException Thrown if a generic access SQL error occurs.
      * @return True if the database is connected, otherwise returns false.
      */
-    public boolean isConnected() throws SQLException {
-        if (connection != null && connection.isValid(3)) {
-            return true;
-        } else {
-            return false;
+    public boolean isConnected() {
+
+        // Connection Cache
+        long now = new Date().getTime();
+        if (lastConnectionCheck != 0 || now - lastConnectionCheck >= 5000) { // TODO: HARD-CODED 5000 MILLISECONDS CACHE
+            lastConnectionCheck = now;
+
+            try {
+                isConnected = connection != null && connection.isValid(3);
+            } catch (SQLException e) {
+                isConnected = false;
+            }
         }
+
+        // Return IsConnected
+        return isConnected;
     }
 
     /**
