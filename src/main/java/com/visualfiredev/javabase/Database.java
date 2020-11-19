@@ -159,7 +159,7 @@ public class Database {
         Statement statement = connection.createStatement();
 
         // Create SQL
-        String sql = tableSchema.toString(type);
+        String sql = tableSchema.toString(prefix, type);
 
         System.out.println(sql);
 
