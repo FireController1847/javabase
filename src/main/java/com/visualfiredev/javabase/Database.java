@@ -168,15 +168,7 @@ public class Database {
 
     // TODO: Create table like? God I have so much to work do...
 
-    /**
-     * Inserts data into the specified table using the {@link com.visualfiredev.javabase.schema.TableSchema} and the specified {@link com.visualfiredev.javabase.DatabaseValue}s.
-     *
-     * @param table The table that this data should be inserted to.
-     * @param values The {@link com.visualfiredev.javabase.DatabaseValue}s that should be inserted.
-     * @throws NotConnectedException Thrown if there is no connection to the database.
-     * @throws SQLException Thrown if running the generated SQL statement failed.
-     */
-    public void insert(TableSchema table, DatabaseValue... values) throws NotConnectedException, SQLException {
+    public void dropTable(TableSchema tableSchema) throws NotConnectedException, SQLException {
         // Ensure Connected
         if (!this.isConnected()) {
             throw new NotConnectedException();
@@ -186,11 +178,41 @@ public class Database {
         Statement statement = connection.createStatement();
 
         // Create SQL
-        StringBuilder sql = new StringBuilder("INSERT INTO " + table.getName());
+        String sql = "DROP TABLE " + tableSchema.getName();
+
+        System.out.println(sql);
+
+        // Execute
+        try {
+            statement.executeUpdate(sql);
+        } catch (SQLException e) {
+            throw new SQLException("Invalid TableSchema or possible library error! SQL Statement Created: " + sql, e);
+        }
+    }
+
+    /**
+     * Inserts data into the specified table using the {@link com.visualfiredev.javabase.schema.TableSchema} and the specified {@link com.visualfiredev.javabase.DatabaseValue}s.
+     *
+     * @param tableSchema The table that this data should be inserted to.
+     * @param values The {@link com.visualfiredev.javabase.DatabaseValue}s that should be inserted.
+     * @throws NotConnectedException Thrown if there is no connection to the database.
+     * @throws SQLException Thrown if running the generated SQL statement failed.
+     */
+    public void insert(TableSchema tableSchema, DatabaseValue... values) throws NotConnectedException, SQLException {
+        // Ensure Connected
+        if (!this.isConnected()) {
+            throw new NotConnectedException();
+        }
+
+        // Create Statement
+        Statement statement = connection.createStatement();
+
+        // Create SQL
+        StringBuilder sql = new StringBuilder("INSERT INTO " + tableSchema.getName());
 
         // Validate Column Names
         for (DatabaseValue value : values) {
-            if (table.getColumn(value.getColumnName()) == null) {
+            if (tableSchema.getColumn(value.getColumnName()) == null) {
                 throw new SQLException("Invalid column name provided!");
             }
         }
@@ -239,13 +261,13 @@ public class Database {
     /**
      * Selects all the data from the table stopping at the specified limit. Set the limit to -1 to disable.
      *
-     * @param table The table that data should be selected from.
+     * @param tableSchema The {@link com.visualfiredev.javabase.schema.TableSchema} that data should be selected from.
      * @param limit The limit. By default is 100.
      * @return A {@link com.visualfiredev.javabase.DatabaseResult}.
      * @throws NotConnectedException Thrown if there is no connection to the database.
      * @throws SQLException Thrown if running the generated SQL statement failed.
      */
-    public DatabaseResult selectAll(TableSchema table, int limit) throws NotConnectedException, SQLException {
+    public DatabaseResult selectAll(TableSchema tableSchema, int limit) throws NotConnectedException, SQLException {
         // Ensure Connected
         if (!this.isConnected()) {
             throw new NotConnectedException();
@@ -255,7 +277,7 @@ public class Database {
         Statement statement = connection.createStatement();
 
         // Create SQL
-        StringBuilder sql = new StringBuilder("SELECT * FROM ").append(table.getName());
+        StringBuilder sql = new StringBuilder("SELECT * FROM ").append(tableSchema.getName());
 
         // Limit
         if (limit > -1) {
@@ -279,13 +301,13 @@ public class Database {
     /**
      * Selects all the data from the table stopping at 100 results.
      *
-     * @param table The table that data should be selected from.
+     * @param tableSchema The {@link com.visualfiredev.javabase.schema.TableSchema} that data should be selected from.
      * @return A {@link com.visualfiredev.javabase.DatabaseResult}.
      * @throws NotConnectedException Thrown if there is no connection to the database.
      * @throws SQLException Thrown if running the generated SQL statement failed.
      */
-    public DatabaseResult selectAll(TableSchema table) throws NotConnectedException, SQLException {
-        return this.selectAll(table, 100);
+    public DatabaseResult selectAll(TableSchema tableSchema) throws NotConnectedException, SQLException {
+        return this.selectAll(tableSchema, 100);
     }
 
     /**

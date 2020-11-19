@@ -149,13 +149,13 @@ public class TableSchema {
         }
 
         // Create String
-        StringBuilder sql = new StringBuilder("CREATE TABLE");
+        StringBuilder sql = new StringBuilder("CREATE ");
 
         // If Not Exists
         if (ifNotExists) {
-            sql.append(" IF NOT EXISTS ");
+            sql.append("TABLE IF NOT EXISTS ");
         } else if (orReplace) {
-            sql.append(" OR REPLACE ");
+            sql.append("OR REPLACE TABLE ");
         }
 
         // Name
