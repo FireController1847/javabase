@@ -17,7 +17,6 @@ import java.util.Properties;
 public class Database {
 
     // Constructor Arguments
-    private String prefix;
     private String host;
     private String database;
     private DatabaseType type;
@@ -30,27 +29,14 @@ public class Database {
     /**
      * Constructs a new database.
      *
-     * @param prefix A prefix that will be prepended to every table.
-     * @param host The IP address of which this database is being hosted. Use 'localhost' for a local database.
-     * @param database The name of the database on a MySQL or MariaDB server, or the file path of an SQLite file.
-     * @param type The type of database being used.
-     */
-    public Database(@NotNull String prefix, @NotNull String host, @NotNull String database, @NotNull DatabaseType type) {
-        this.prefix = prefix;
-        this.host = host;
-        this.database = database;
-        this.type = type;
-    }
-
-    /**
-     * Constructs a new database with no table prefix.
-     *
      * @param host The IP address of which this database is being hosted. Use 'localhost' for a local database.
      * @param database The name of the database on a MySQL or MariaDB server, or the file path of an SQLite file.
      * @param type The type of database being used.
      */
     public Database(@NotNull String host, @NotNull String database, @NotNull DatabaseType type) {
-        this("", host, database, type);
+        this.host = host;
+        this.database = database;
+        this.type = type;
     }
 
     /**
@@ -348,15 +334,6 @@ public class Database {
 
         // Return IsConnected
         return isConnected;
-    }
-
-    /**
-     * Returns the prefix that is appended to every table on this database.
-     * @return The prefix that is appended to every table on this database.
-     */
-    @NotNull
-    public String getPrefix() {
-        return prefix;
     }
 
     /**

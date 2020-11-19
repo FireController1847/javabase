@@ -142,7 +142,8 @@ public class TableSchema {
      * @throws UnsupportedDatabaseTypeException Thrown if any of the {@link com.visualfiredev.javabase.schema.ColumnSchema}'s do not support this type of database.
      * @throws UnsupportedFeatureException Thrown if a feature was enabled that this database does not support.
      */
-    public String toString(DatabaseType databaseType) throws UnsupportedDatabaseTypeException, UnsupportedFeatureException {
+    @NotNull
+    public String toString(@NotNull DatabaseType databaseType) throws UnsupportedDatabaseTypeException, UnsupportedFeatureException {
         // Validate Features
         if (databaseType == DatabaseType.SQLite && orReplace) {
             throw new UnsupportedFeatureException(databaseType, "CREATE TABLE OR REPLACE");
