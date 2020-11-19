@@ -36,4 +36,11 @@ public class DatabaseValue {
         return data;
     }
 
+    @Override
+    public String toString() {
+        return "DatabaseValue{" +
+                "columnName='" + columnName + '\'' +
+                ", data=" + data +
+                '}';
+    }
 }

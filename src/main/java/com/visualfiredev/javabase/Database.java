@@ -6,10 +6,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
 import java.io.IOException;
-import java.sql.Connection;
-import java.sql.Driver;
-import java.sql.SQLException;
-import java.sql.Statement;
+import java.sql.*;
 import java.util.Properties;
 
 /**
@@ -227,7 +224,7 @@ public class Database {
         }
 
         // Close
-        sql.append(" );");
+        sql.append(");");
 
         System.out.println(sql);
 
@@ -235,8 +232,60 @@ public class Database {
         try {
             statement.executeUpdate(sql.toString());
         } catch (SQLException e) {
-            throw new SQLException("Invalid DatabaseValues or possible library error! SQL Statement Created: " + sql, e);
+            throw new SQLException("Invalid TableSchema, DatabaseValues, or possible library error! SQL Statement Created: " + sql, e);
         }
+    }
+
+    /**
+     * Selects all the data from the table stopping at the specified limit. Set the limit to -1 to disable.
+     *
+     * @param table The table that data should be selected from.
+     * @param limit The limit. By default is 100.
+     * @return A {@link com.visualfiredev.javabase.DatabaseResult}.
+     * @throws NotConnectedException Thrown if there is no connection to the database.
+     * @throws SQLException Thrown if running the generated SQL statement failed.
+     */
+    public DatabaseResult selectAll(TableSchema table, int limit) throws NotConnectedException, SQLException {
+        // Ensure Connected
+        if (!this.isConnected()) {
+            throw new NotConnectedException();
+        }
+
+        // Create Statement
+        Statement statement = connection.createStatement();
+
+        // Create SQL
+        StringBuilder sql = new StringBuilder("SELECT * FROM ").append(table.getName());
+
+        // Limit
+        if (limit > -1) {
+            sql.append(" LIMIT ").append(limit);
+        }
+
+        System.out.println(sql);
+
+        // Execute
+        ResultSet set;
+        try {
+            set = statement.executeQuery(sql.toString());
+        } catch (SQLException e) {
+            throw new SQLException("Invalid TableSchema or possible library error! SQL Statement Created: " + sql, e);
+        }
+
+        // Create DatabaseResult & Return
+        return new DatabaseResult(set);
+    }
+
+    /**
+     * Selects all the data from the table stopping at 100 results.
+     *
+     * @param table The table that data should be selected from.
+     * @return A {@link com.visualfiredev.javabase.DatabaseResult}.
+     * @throws NotConnectedException Thrown if there is no connection to the database.
+     * @throws SQLException Thrown if running the generated SQL statement failed.
+     */
+    public DatabaseResult selectAll(TableSchema table) throws NotConnectedException, SQLException {
+        return this.selectAll(table, 100);
     }
 
     /**
