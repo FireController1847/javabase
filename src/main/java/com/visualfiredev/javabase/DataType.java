@@ -1,7 +1,6 @@
 package com.visualfiredev.javabase;
 
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Contains an enum for every generic data type.

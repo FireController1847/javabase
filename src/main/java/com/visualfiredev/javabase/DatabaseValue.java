@@ -1,7 +1,5 @@
 package com.visualfiredev.javabase;
 
-import com.visualfiredev.javabase.schema.ColumnSchema;
-
 /**
  * Represents a value in a database. Requires the corresponding ColumnSchema.
  */

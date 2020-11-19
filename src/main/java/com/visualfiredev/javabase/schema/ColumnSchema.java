@@ -2,14 +2,9 @@ package com.visualfiredev.javabase.schema;
 
 import com.visualfiredev.javabase.DataType;
 import com.visualfiredev.javabase.DatabaseType;
-import com.visualfiredev.javabase.UnsupportedDataTypeException;
 import com.visualfiredev.javabase.UnsupportedDatabaseTypeException;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-
-import java.sql.Connection;
-import java.sql.ResultSet;
-import java.sql.SQLException;
 
 /**
  * Defines a schema for a column of a table.

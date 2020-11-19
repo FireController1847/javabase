@@ -1,15 +1,11 @@
 package com.visualfiredev.javabase;
 
-import com.visualfiredev.javabase.schema.ColumnSchema;
 import com.visualfiredev.javabase.schema.TableSchema;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
 import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.sql.Connection;
 import java.sql.Driver;
 import java.sql.SQLException;
