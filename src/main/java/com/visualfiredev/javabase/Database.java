@@ -135,6 +135,7 @@ public class Database {
     public void disconnect() throws SQLException {
         if (connection != null) {
             connection.close();
+            connection = null;
         }
     }
 
@@ -172,6 +173,13 @@ public class Database {
 
     // TODO: Create table like? God I have so much to work do...
 
+    /**
+     * Drops a table from the database.
+     *
+     * @param tableSchema The table to be dropped.
+     * @throws NotConnectedException Thrown if there is no connection to the database.
+     * @throws SQLException Thrown if dropping the table failed.
+     */
     public void dropTable(TableSchema tableSchema) throws NotConnectedException, SQLException {
         // Ensure Connected
         if (!this.isConnected()) {
