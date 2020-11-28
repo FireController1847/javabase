@@ -345,6 +345,41 @@ public class Database {
     }
 
     /**
+     * Executes an SQL update directly on the connection. See {@link Statement#executeUpdate(String)}
+     * 
+     * @param sql The SQL update to be executed.
+     * @throws SQLException Thrown if something goes wrong.
+     */
+    public void rawUpdate(String sql) throws SQLException {
+        Statement statement = connection.createStatement();
+        statement.executeUpdate(sql);
+    }
+
+    /**
+     * Executes an SQL query directly on the connection. See {@link Statement#executeQuery(String)}
+     * 
+     * @param sql The SQL query to be executed.
+     * @return The Java ResultSet in response (optionally, turn it into a DatabaseResult by passing it in the constructor, ex `new DatabaseResult(resultSet)`).
+     * @throws SQLException Thrown if something goes wrong.
+     */
+    public ResultSet rawQuery(String sql) throws SQLException {
+        Statement statement = connection.createStatement();
+        return statement.executeQuery(sql);
+    }
+
+    /**
+     * Executes an SQL statement directly on the connection. See {@link Statement#execute(String)}
+     * 
+     * @param sql The SQL statement to be executed.
+     * @return Whether or not the statement succeeded.
+     * @throws SQLException Thrown if something goes wrong.
+     */
+    public boolean raw(String sql) throws SQLException {
+        Statement statement = connection.createStatement();
+        return statement.execute(sql);
+    }
+
+    /**
      * Returns true if the database is connected, otherwise returns false.
      * TODO: Cache the result of isValid, that way we can use this in every request made.
      *       Simply caching for five seconds could drastically improve execution time.
