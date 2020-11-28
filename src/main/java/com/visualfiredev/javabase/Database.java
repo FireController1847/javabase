@@ -1,5 +1,6 @@
 package com.visualfiredev.javabase;
 
+import com.visualfiredev.javabase.schema.ColumnSchema;
 import com.visualfiredev.javabase.schema.TableSchema;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -268,7 +269,129 @@ public class Database {
     }
 
     /**
-     * Selects all the data from the table stopping at the specified limit. Set the limit to -1 to disable.
+     * Selects data from the database using the specified expression with the specified limit.
+     *
+     * <p>
+     *     It is virtually impossible to provide cross-compatible statements for a "WHERE" expression,
+     *     so it is passed as **RAW SQL** in this method.
+     *
+     *     Please keep in mind that the WHERE statement is dependent on which database you are using, so
+     *     this method is **not cross-compatible**. Please ensure you know which database you are using,
+     *     likely using the {@link Database#getType()} method, when using the "WHERE" clause.
+     *
+     *     If you only want to select certain rows, use the {@link TableSchema#clone()} method and remove
+     *     the columns you do not want to include in the result, or create a new {@link TableSchema} with the name
+     *     and columns you want to include. They do not need to be exact copies, as long as the names
+     *     are exactly the same as what is in the database.
+     *
+     *     If you wish not to include a "WHERE" expression, use {@link Database#selectAll(TableSchema)} instead.
+     *
+     *     Since this is a simple library, at the moment we do not provide functionality to JOIN or select
+     *     from multiple tables without having multiple select statements. This may change in the future.
+     * </p>
+     *
+     * @param tableSchema The table and columns to select from.
+     * @param where The platform-dependent SQL statement for a "WHERE" clause.
+     * @param limit The limit of the results. Set to -1 to disable.
+     * @return A DatabaseResult.
+     * @throws NotConnectedException Thrown if there is no connection to the database.
+     * @throws SQLException Thrown if running the generated SQL statement failed.
+     */
+    public DatabaseResult select(TableSchema tableSchema, String where, int limit) throws NotConnectedException, SQLException {
+        // Ensure Connected
+        if (!this.isConnected()) {
+            throw new NotConnectedException();
+        }
+
+        // Create Statement
+        Statement statement = connection.createStatement();
+
+        // Create SQL
+        StringBuilder sql = new StringBuilder("SELECT ");
+
+        // Add Columns
+        ArrayList<ColumnSchema> columns = tableSchema.getColumns();
+        for (int i = 0; i < columns.size(); i++) {
+            sql.append(columns.get(i).getName());
+
+            // Comma? Are there more?
+            if (i != columns.size() - 1) {
+                sql.append(", ");
+            }
+        }
+
+        // From The Table
+        sql.append(" FROM ").append(tableSchema.getName());
+
+        // Where...
+        sql.append(" WHERE ").append(where);
+
+        // Limit
+        if (limit > -1) {
+            sql.append(" LIMIT ").append(limit);
+        }
+
+        System.out.println(sql);
+
+        // Execute
+        ResultSet set;
+        try {
+            set = statement.executeQuery(sql.toString());
+        } catch (SQLException e) {
+            throw new SQLException("Invalid TableSchema or possible library error! SQL Statement Created: " + sql, e);
+        }
+
+        // Create DatabaseResult & Return
+        return new DatabaseResult(set);
+    }
+
+    /**
+     * Selects data from the database using the specified expression with a limit of 100.
+     * See {@link Database#select(TableSchema, String, int)} for more information.
+     *
+     * @param tableSchema The table and columns to select from.
+     * @param where The platform-dependent SQL statement for a "WHERE" clause.
+     * @return A DatabaseResult.
+     * @throws NotConnectedException Thrown if there is no connection to the database.
+     * @throws SQLException Thrown if running the generated SQL statement failed.
+     */
+    public DatabaseResult select(TableSchema tableSchema, String where) throws NotConnectedException, SQLException {
+        return select(tableSchema, where, 100);
+    }
+
+    /**
+     * Selects data from the database using the specified expression and the specified limit, creating new instances of the specified class.
+     * See {@link Database#select(TableSchema, String, int)} for more information.
+     *
+     * @param tableSchema The table and columns to select from.
+     * @param where The platform-dependent SQL statement for a "WHERE" clause.
+     * @param limit The limit of the results. Set to -1 to disable.
+     * @param clazz The class to create new instances from.
+     * @param <T> The type of object to be returned.
+     * @return An ArrayList of the objects.
+     * @throws Exception Thrown if there is an error while mapping values for the DatabaseObject.
+     */
+    public <T extends DatabaseObject> ArrayList<T> select(TableSchema tableSchema, String where, int limit, Class<T> clazz) throws Exception {
+        return select(tableSchema, where, limit).toObjects(tableSchema, clazz);
+    }
+
+    /**
+     * Selects data from the database using the specified expression and a limit of 100, creating new instances of the specified class.
+     * See {@link Database#select(TableSchema, String, int)} for more information.
+     *
+     * @param tableSchema The table and columns to select from.
+     * @param where The platform-dependent SQL statement for a "WHERE" clause.
+     * @param clazz The class to create new instances from.
+     * @param <T> The type of object to be returned.
+     * @return An ArrayList of the objects.
+     * @throws Exception Thrown if there is an error while mapping values for the DatabaseObject.
+     */
+    public <T extends DatabaseObject> ArrayList<T> select(TableSchema tableSchema, String where, Class<T> clazz) throws Exception {
+        return select(tableSchema, where, 100).toObjects(tableSchema, clazz);
+    }
+
+    /**
+     * Selects all the data from the table using the columns in the TableSchema stopping at the specified limit. Set the limit to -1 to disable.
      *
      * @param tableSchema The {@link com.visualfiredev.javabase.schema.TableSchema} that data should be selected from.
      * @param limit The limit. By default is 100.
@@ -286,7 +409,21 @@ public class Database {
         Statement statement = connection.createStatement();
 
         // Create SQL
-        StringBuilder sql = new StringBuilder("SELECT * FROM ").append(tableSchema.getName());
+        StringBuilder sql = new StringBuilder("SELECT ");
+
+        // Add Columns
+        ArrayList<ColumnSchema> columns = tableSchema.getColumns();
+        for (int i = 0; i < columns.size(); i++) {
+            sql.append(columns.get(i).getName());
+
+            // Comma? Are there more?
+            if (i != columns.size() - 1) {
+                sql.append(", ");
+            }
+        }
+
+        // From The Table
+        sql.append(" FROM ").append(tableSchema.getName());
 
         // Limit
         if (limit > -1) {
@@ -325,10 +462,11 @@ public class Database {
      * @param tableSchema The {@link com.visualfiredev.javabase.schema.TableSchema} that data should be selected from.
      * @param limit The limit. By default is 100.
      * @param clazz The class that all instances should be created from.
+     * @param <T> The type of object to be returned.
      * @return An array of new {@link DatabaseObject} instances.
      * @throws Exception Thrown if there is an error while mapping values for the DatabaseObject.
      */
-    public ArrayList<? extends DatabaseObject> selectAll(TableSchema tableSchema, int limit, Class<? extends DatabaseObject> clazz) throws Exception {
+    public <T extends DatabaseObject> ArrayList<T> selectAll(TableSchema tableSchema, int limit, Class<T> clazz) throws Exception {
         return this.selectAll(tableSchema, limit).toObjects(tableSchema, clazz);
     }
 
@@ -337,10 +475,11 @@ public class Database {
      *
      * @param tableSchema The {@link com.visualfiredev.javabase.schema.TableSchema} that data should be selected from.
      * @param clazz The class that all instances should be created from.
+     * @param <T> The type of object to be returned.
      * @return An array of new {@link DatabaseObject} instances.
      * @throws Exception Thrown if there is an error while mapping values for the DatabaseObject.
      */
-    public ArrayList<? extends DatabaseObject> selectAll(TableSchema tableSchema, Class<? extends DatabaseObject> clazz) throws Exception {
+    public <T extends DatabaseObject> ArrayList<T> selectAll(TableSchema tableSchema, Class<T> clazz) throws Exception {
         return this.selectAll(tableSchema, 100).toObjects(tableSchema, clazz);
     }
 

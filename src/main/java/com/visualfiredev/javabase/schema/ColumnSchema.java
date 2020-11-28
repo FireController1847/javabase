@@ -276,4 +276,18 @@ public class ColumnSchema {
         return sql.toString();
     }
 
+    @Override
+    public String toString() {
+        return "ColumnSchema{" +
+                "name='" + name + '\'' +
+                ", dataType=" + dataType +
+                ", value=" + value +
+                ", defaultValue=" + defaultValue +
+                ", isPrimaryKey=" + isPrimaryKey +
+                ", isUniqueKey=" + isUniqueKey +
+                ", isAutoIncrement=" + isAutoIncrement +
+                ", isNotNull=" + isNotNull +
+                '}';
+    }
+
 }

@@ -11,7 +11,7 @@ import java.util.Arrays;
 /**
  * Defines a schema for a table.
  */
-public class TableSchema {
+public class TableSchema implements Cloneable {
 
     // Constructor Arguments
     private String name;
@@ -149,6 +149,27 @@ public class TableSchema {
     }
 
     /**
+     * Attempts to remove a column from this TableSchema with the specified name.
+     *
+     * @param columnName The name of the column to be removed.
+     * @return The TableSchema.
+     */
+    public TableSchema removeColumn(String columnName) {
+        ColumnSchema column = this.getColumn(columnName);
+        if (column != null) {
+            this.columns.remove(column);
+        }
+        return this;
+    }
+
+    @Override
+    public TableSchema clone() throws CloneNotSupportedException {
+        TableSchema clone = (TableSchema) super.clone();
+        clone.columns = new ArrayList<>(columns);
+        return clone;
+    }
+
+    /**
      * Converts this table schema to a "CREATE TABLE" sql string.
      *
      * @param databaseType The {@link com.visualfiredev.javabase.DatabaseType} that this string should be made for.
@@ -196,4 +217,15 @@ public class TableSchema {
         // Return String
         return sql.toString();
     }
+
+    @Override
+    public String toString() {
+        return "TableSchema{" +
+                "name='" + name + '\'' +
+                ", columns=" + columns +
+                ", ifNotExists=" + ifNotExists +
+                ", orReplace=" + orReplace +
+                '}';
+    }
+
 }
