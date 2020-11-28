@@ -79,6 +79,20 @@ public class TableSchema {
     }
 
     /**
+     * Fetches a ColumnSchema by its name ignoring the case.
+     * @param name The name of the ColumnSchema.
+     * @return The corresponding ColumnSchema or null if not found.
+     */
+    public ColumnSchema getColumnIgnoreCase(String name) {
+        for (ColumnSchema column : columns) {
+            if (column.getName().toLowerCase().equals(name.toLowerCase())) {
+                return column;
+            }
+        }
+        return null;
+    }
+
+    /**
      * Sets whether or not this table should include "IF NOT EXISTS". Takes priority over "OR REPLACE"
      *
      * @param ifNotExists Whether or not this table should include "IF NOT EXISTS"
@@ -157,6 +171,8 @@ public class TableSchema {
             sql.append("TABLE IF NOT EXISTS ");
         } else if (orReplace) {
             sql.append("OR REPLACE TABLE ");
+        } else {
+            sql.append("TABLE ");
         }
 
         // Name

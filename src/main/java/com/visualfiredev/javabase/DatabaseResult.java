@@ -1,10 +1,14 @@
 package com.visualfiredev.javabase;
 
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 
 /**
  * Represents the result of an operation that returns data in a database.
@@ -40,6 +44,77 @@ public class DatabaseResult {
                 values.add(new DatabaseValue(meta.getColumnName(i), set.getObject(i)));
             }
         }
+    }
+
+    /**
+     * Attempts to tie each row of this {@link com.visualfiredev.javabase.DatabaseResult} to the specified object's
+     * non-transient fields by creating new instances of it and reflexively applying values.
+     *
+     * <p>
+     *     This method should only be used when you are building the TableSchema and ColumnSchema manually. It
+     *     does not have advanced functionality and will attempt to parse ALL fields of a class to the
+     *     corresponding columns in this DatabaseResult. **This method ignores case**, so if your fields
+     *     are called `id` and the column in the database is `Id`, it will still map it.
+     *
+     *     In the case that it fails, it will still return the instances of the objects, however you
+     *     will notice that none of the values have mapped. This is a limitation of this method and
+     *     is not going to be fixed.
+     *
+     *     It is strongly recommended to use the annotation system instead.
+     * </p>
+     *
+     * TODO: Link to annotation system
+     *
+     * @param clazz The class to create a new instance from.
+     * @param <T> The type that the ArrayList should be casted to at the end.
+     * @return An ArrayList of all of the created objects with the corresponding values inserted.
+     */
+    public <T> ArrayList<T> toObject(Class<T> clazz) throws Exception {
+        // Fetch Constructor
+        Constructor<T> constructor;
+        try {
+            constructor = clazz.getConstructor();
+            constructor.setAccessible(true);
+        } catch (ReflectiveOperationException e) {
+            throw new Exception("Class " + clazz.getSimpleName() + " must have a blank constructor!", e);
+        }
+
+        // Get Fields
+        HashMap<String, Field> columns = new HashMap<>();
+        for (Field field : clazz.getDeclaredFields()) {
+            if (Modifier.isTransient(field.getModifiers())) {
+                continue;
+            }
+
+            field.setAccessible(true);
+            columns.put(field.getName().toLowerCase(), field);
+        }
+
+        // Map Fields & Objects
+        ArrayList<T> objects = new ArrayList<>();
+        for (int i = 1; i <= this.getRowCount(); i++) {
+            DatabaseValue[] row = this.getValuesForRow(i);
+
+            T instance;
+            try {
+                instance = constructor.newInstance();
+            } catch (ReflectiveOperationException e) {
+                throw new Exception("There was an internal error while trying to create a new instance of " + clazz.getSimpleName() + ".", e);
+            }
+
+            for (DatabaseValue value : row) {
+                // TODO: This is wasteful, why call it every row? I need to filter this on the first
+                //       iteration and then use the full array on further iterations.
+                if (columns.containsKey(value.getColumnName().toLowerCase())) {
+                    Field field = columns.get(value.getColumnName().toLowerCase());
+                    field.set(instance, value.getData());
+                }
+            }
+
+            objects.add(instance);
+        }
+
+        return objects;
     }
 
     /**
