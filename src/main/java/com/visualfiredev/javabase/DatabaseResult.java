@@ -1,14 +1,13 @@
 package com.visualfiredev.javabase;
 
+import com.visualfiredev.javabase.schema.TableSchema;
+
 import java.lang.reflect.Constructor;
-import java.lang.reflect.Field;
-import java.lang.reflect.Modifier;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 
 /**
  * Represents the result of an operation that returns data in a database.
@@ -47,29 +46,25 @@ public class DatabaseResult {
     }
 
     /**
-     * Attempts to tie each row of this {@link com.visualfiredev.javabase.DatabaseResult} to the specified object's
-     * non-transient fields by creating new instances of it and reflexively applying values.
+     * Attempts to tie each row in the database (or an array of DatabaseValues) to the non-transient
+     * fields in the specified class, creating a new instance for each row.
      *
      * <p>
-     *     This method should only be used when you are building the TableSchema and ColumnSchema manually. It
-     *     does not have advanced functionality and will attempt to parse ALL fields of a class to the
-     *     corresponding columns in this DatabaseResult. **This method ignores case**, so if your fields
-     *     are called `id` and the column in the database is `Id`, it will still map it.
+     *     This method utilizes the {@link DatabaseValue#toObject(TableSchema, DatabaseValue[], Object)} method, which
+     *     will apply an array of DatabaseValues to an object by attempting to map the field names to the specified
+     *     {@link TableSchema}. Because of this, this method may throw various exceptions relating to reflection if there
+     *     is no alignment between the TableSchema and the specified class object.
      *
-     *     In the case that it fails, it will still return the instances of the objects, however you
-     *     will notice that none of the values have mapped. This is a limitation of this method and
-     *     is not going to be fixed.
-     *
-     *     It is strongly recommended to use the annotation system instead.
+     *     **This is a case-insensitive operation, so column `EXAMPLE` will be mapped to a field named `example`.**
      * </p>
      *
-     * TODO: Link to annotation system
-     *
-     * @param clazz The class to create a new instance from.
-     * @param <T> The type that the ArrayList should be casted to at the end.
-     * @return An ArrayList of all of the created objects with the corresponding values inserted.
+     * @param tableSchema The {@link TableSchema} that should be used to determine the columns from the object.
+     * @param clazz The class in which new instances should be created from for mapping.
+     * @param <T> The class that the object is an instance of.
+     * @return An ArrayList of new instances of the specified object.
+     * @throws Exception Generically thrown if something goes wrong.
      */
-    public <T> ArrayList<T> toObject(Class<T> clazz) throws Exception {
+    public <T> ArrayList<T> toObjects(TableSchema tableSchema, Class<T> clazz) throws Exception {
         // Fetch Constructor
         Constructor<T> constructor;
         try {
@@ -79,22 +74,12 @@ public class DatabaseResult {
             throw new Exception("Class " + clazz.getSimpleName() + " must have a blank constructor!", e);
         }
 
-        // Get Fields
-        HashMap<String, Field> columns = new HashMap<>();
-        for (Field field : clazz.getDeclaredFields()) {
-            if (Modifier.isTransient(field.getModifiers())) {
-                continue;
-            }
-
-            field.setAccessible(true);
-            columns.put(field.getName().toLowerCase(), field);
-        }
-
         // Map Fields & Objects
         ArrayList<T> objects = new ArrayList<>();
         for (int i = 1; i <= this.getRowCount(); i++) {
             DatabaseValue[] row = this.getValuesForRow(i);
 
+            // Create Instance
             T instance;
             try {
                 instance = constructor.newInstance();
@@ -102,16 +87,9 @@ public class DatabaseResult {
                 throw new Exception("There was an internal error while trying to create a new instance of " + clazz.getSimpleName() + ".", e);
             }
 
-            for (DatabaseValue value : row) {
-                // TODO: This is wasteful, why call it every row? I need to filter this on the first
-                //       iteration and then use the full array on further iterations.
-                if (columns.containsKey(value.getColumnName().toLowerCase())) {
-                    Field field = columns.get(value.getColumnName().toLowerCase());
-                    field.set(instance, value.getData());
-                }
-            }
-
-            objects.add(instance);
+            // Map Instance
+            T object = DatabaseValue.toObject(tableSchema, row, instance);
+            objects.add(object);
         }
 
         return objects;

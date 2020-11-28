@@ -7,6 +7,7 @@ import org.jetbrains.annotations.Nullable;
 import java.io.File;
 import java.io.IOException;
 import java.sql.*;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.Properties;
 
@@ -257,6 +258,16 @@ public class Database {
     }
 
     /**
+     * Inserts data into the specified table using a {@link DatabaseObject}.
+     *
+     * @param object The {@link DatabaseObject} that contains the values that should be inserted.
+     * @throws Exception Thrown if there is an error while mapping values for the DatabaseObject.
+     */
+    public void insert(DatabaseObject object) throws Exception {
+        this.insert(object.getTableSchema(), object.toValues());
+    }
+
+    /**
      * Selects all the data from the table stopping at the specified limit. Set the limit to -1 to disable.
      *
      * @param tableSchema The {@link com.visualfiredev.javabase.schema.TableSchema} that data should be selected from.
@@ -306,6 +317,31 @@ public class Database {
      */
     public DatabaseResult selectAll(TableSchema tableSchema) throws NotConnectedException, SQLException {
         return this.selectAll(tableSchema, 100);
+    }
+
+    /**
+     * Selects all the data from the table stopping at the specified limit, mapping it to the specified class. Set the limit to -1 to disable.
+     *
+     * @param tableSchema The {@link com.visualfiredev.javabase.schema.TableSchema} that data should be selected from.
+     * @param limit The limit. By default is 100.
+     * @param clazz The class that all instances should be created from.
+     * @return An array of new {@link DatabaseObject} instances.
+     * @throws Exception Thrown if there is an error while mapping values for the DatabaseObject.
+     */
+    public ArrayList<? extends DatabaseObject> selectAll(TableSchema tableSchema, int limit, Class<? extends DatabaseObject> clazz) throws Exception {
+        return this.selectAll(tableSchema, limit).toObjects(tableSchema, clazz);
+    }
+
+    /**
+     * Selects all the data from the table stopping at 100 results, mapping to to the specified class.
+     *
+     * @param tableSchema The {@link com.visualfiredev.javabase.schema.TableSchema} that data should be selected from.
+     * @param clazz The class that all instances should be created from.
+     * @return An array of new {@link DatabaseObject} instances.
+     * @throws Exception Thrown if there is an error while mapping values for the DatabaseObject.
+     */
+    public ArrayList<? extends DatabaseObject> selectAll(TableSchema tableSchema, Class<? extends DatabaseObject> clazz) throws Exception {
+        return this.selectAll(tableSchema, 100).toObjects(tableSchema, clazz);
     }
 
     /**
