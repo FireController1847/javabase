@@ -128,6 +128,23 @@ public class Database {
     }
 
     /**
+     * Checks if the specified table already exists.
+     *
+     * @param tableSchema The TableSchema to use to determine if it exists.
+     * @return True if it exists, otherwise false.
+     * @throws SQLException Thrown if there an issue checking if it exists.
+     */
+    public boolean doesTableExist(TableSchema tableSchema) throws SQLException {
+        DatabaseMetaData meta = connection.getMetaData();
+        ResultSet set = meta.getTables(null, null, tableSchema.getName(), null);
+        int count = 0;
+        while (set.next()) {
+            count++;
+        }
+        return count > 0;
+    }
+
+    /**
      * Creates a table (depending on if it exists or not) using the specified {@link com.visualfiredev.javabase.schema.TableSchema}.
      * TODO: Make this return a "table" object and not void
      *
