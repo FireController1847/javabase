@@ -588,22 +588,8 @@ public class Database {
                 // Column Name
                 sql.append(column.getName().toUpperCase()).append(" = ");
 
-                // Handle Data Types
-                Object data = field.get(object);
-
-                // Handle Booleans
-                if (data instanceof Integer && field.getType().isAssignableFrom(boolean.class)) {
-                    Integer number = (Integer) data;
-                    if (number > 0) {
-                        sql.append('1');
-                    } else {
-                        sql.append('0');
-                    }
-
-                // Everything Else Surround in Quotes
-                } else {
-                    sql.append("'").append(field.get(object)).append("'");
-                }
+                // Data Types
+                sql.append(fieldToDatabaseValue(object, field));
 
                 // "AND"? Are there more?
                 if (i != fields.size() - 1) {
@@ -621,7 +607,144 @@ public class Database {
         try {
             statement.executeUpdate(sql.toString());
         } catch (SQLException e) {
-            throw new SQLException("Invalid TableSchema, DatabaseValues, or possible library error! SQL Statement Created: " + sql, e);
+            throw new SQLException("Invalid TableSchema or possible library error! SQL Statement Created: " + sql, e);
+        }
+    }
+
+    /**
+     * Updates data in the database using the specified 'SET' string and the specified 'WHERE' string.
+     *
+     * <p>
+     *     As with WHERE, it is virtually impossible to provide cross-compatible statements for a "SET" expression,
+     *     so it is passed as **RAW SQL** in this method.
+     *
+     *     For the same reasons as {@link Database#select(TableSchema, String, int)}, this method is
+     *     **not cross-compatible**. It is up to the user to know the type of database they are working
+     *     with, likely using the {@link Database#getType()} method, when using the "WHERE" clause.
+     * </p>
+     *
+     * @param tableSchema The table to update.
+     * @param set The platform-dependent list of SQL "SET" statements.
+     * @param where The platform-dependent SQL statement for a "WHERE" clause.
+     * @throws NotConnectedException Thrown if there is no connection to the database.
+     * @throws SQLException Thrown if running the generated SQL statement failed.
+     */
+    public void update(TableSchema tableSchema, String set, String where) throws NotConnectedException, SQLException {
+        // Ensure Connected
+        if (!this.isConnected()) {
+            throw new NotConnectedException();
+        }
+
+        // Create Statement
+        Statement statement = connection.createStatement();
+
+        // Create SQL
+        StringBuilder sql = new StringBuilder("UPDATE ").append(tableSchema.getName());
+
+        // Set...
+        sql.append(" SET ").append(set);
+
+        // Where...
+        if (!where.isEmpty()) {
+            sql.append(" WHERE ").append(where);
+        }
+
+        // Close
+        sql.append(";");
+
+        System.out.println(sql);
+
+        // Execute
+        try {
+            statement.executeUpdate(sql.toString());
+        } catch (SQLException e) {
+            throw new SQLException("Invalid TableSchema or possible library error! SQL Statement Created: " + sql, e);
+        }
+    }
+
+    /**
+     * Updates data in the database using the specified 'SET' string with no WHERE clause.
+     * See {@link Database#update(TableSchema, String, String)} for more information.
+     *
+     * @param tableSchema The table to update.
+     * @param set The platform-dependent list of SQL "SET" statements.
+     * @throws NotConnectedException Thrown if there is no connection to the database.
+     * @throws SQLException Thrown if running the generated SQL statement failed.
+     */
+    public void update(TableSchema tableSchema, String set) throws NotConnectedException, SQLException {
+        update(tableSchema, set, "");
+    }
+
+    /**
+     * Updates data in the database associated with the {@link DatabaseObject}'s non-transient fields. This method will
+     * update ALL fields in the database associated with the object, not just the changed ones.
+     *
+     * @param object The {@link DatabaseObject} to use for updating data.
+     * @throws Exception Thrown if there is an error while mapping values for the DatabaseObject.
+     */
+    public void update(DatabaseObject object) throws Exception {
+        // Ensure Connected
+        if (!this.isConnected()) {
+            throw new NotConnectedException();
+        }
+
+        // Create Statement
+        Statement statement = connection.createStatement();
+
+        // Create SQL
+        StringBuilder sql = new StringBuilder("UPDATE ").append(object.getTableSchema().getName());
+
+        // Fields
+        ArrayList<Field> fields = getNonTransientFields(object.getClass());
+
+        // Set...
+        sql.append(" SET ");
+        for (int i = 0; i < fields.size(); i++) {
+            Field field = fields.get(i);
+            ColumnSchema column = object.getTableSchema().getColumnIgnoreCase(field.getName());
+            if (column != null && !column.isPrimaryKey()) {
+                // Column Name
+                sql.append(column.getName().toUpperCase()).append(" = ");
+
+                // Data Types
+                sql.append(fieldToDatabaseValue(object, field));
+
+                // Comma? Are there more?
+                if (i != fields.size() - 1) {
+                    sql.append(", ");
+                }
+            }
+        }
+
+        // Where...
+        sql.append(" WHERE ");
+
+        // Find primary key and append to field, otherwise error if there is no primary or unique key
+        // TODO: I do this many times, maybe there is a way to optimize this connection between columns and fields?
+        for (Field field : fields) {
+            ColumnSchema column = object.getTableSchema().getColumnIgnoreCase(field.getName());
+            if (column != null && column.isPrimaryKey()) {
+                // Column Name
+                sql.append(column.getName().toUpperCase()).append(" = ");
+
+                // Data Types
+                sql.append(fieldToDatabaseValue(object, field));
+
+                // No need to continue, there should only be one primary key.
+                break;
+            }
+        }
+
+        // Close
+        sql.append(";");
+
+        System.out.println(sql);
+
+        // Execute
+        try {
+            statement.executeUpdate(sql.toString());
+        } catch (SQLException e) {
+            throw new SQLException("Invalid TableSchema or possible library error! SQL Statement Created: " + sql, e);
         }
     }
 
@@ -699,7 +822,7 @@ public class Database {
      * @param clazz The class to extract fields from.
      * @return An ArrayList of fields.
      */
-    protected static ArrayList<Field> getNonTransientFields(Class clazz) {
+    protected static ArrayList<Field> getNonTransientFields(Class<?> clazz) {
         ArrayList<Field> fields = new ArrayList<>();
         for (Field field : clazz.getDeclaredFields()) {
             if (Modifier.isTransient(field.getModifiers())) {
@@ -710,6 +833,38 @@ public class Database {
             fields.add(field);
         }
         return fields;
+    }
+
+    /**
+     * Utility method to convert a field to a database value. Mostly used to handle edge-cases like
+     * booleans.
+     *
+     * @param object The instance of the object to fetch data from.
+     * @param field The field of the object.
+     * @return A {@link StringBuilder} containing the database value as a string.
+     * @throws IllegalAccessException Thrown if there is an issue accessing the field.
+     */
+    protected static StringBuilder fieldToDatabaseValue(Object object, Field field) throws IllegalAccessException {
+        StringBuilder string = new StringBuilder();
+
+        // Handle Data Types
+        Object data = field.get(object);
+
+        // Handle Integer Booleans
+        if (field.getType().isAssignableFrom(boolean.class)) {
+            Boolean bool = (Boolean) data;
+            if (bool) {
+                string.append('1');
+            } else {
+                string.append('0');
+            }
+
+        // Everything Else Surround in Quotes
+        } else {
+            string.append("'").append(field.get(object)).append("'");
+        }
+
+        return string;
     }
 
     /**
