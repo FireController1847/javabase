@@ -180,8 +180,9 @@ public class TableSchema implements Cloneable {
     @NotNull
     public String toString(@NotNull DatabaseType databaseType) throws UnsupportedDatabaseTypeException, UnsupportedFeatureException {
         // Validate Features
-        if (databaseType == DatabaseType.SQLite && orReplace) {
-            throw new UnsupportedFeatureException(databaseType, "CREATE TABLE OR REPLACE");
+        // Note: Weirdly enough, MySQL does not support `CREATE OR REPLACE TABLE`, but MariaDB does.
+        if ((databaseType == DatabaseType.SQLite || databaseType == DatabaseType.MySQL) && orReplace) {
+            throw new UnsupportedFeatureException(databaseType, "CREATE OR REPLACE TABLE");
         }
 
         // Create String

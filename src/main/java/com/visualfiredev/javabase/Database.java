@@ -847,6 +847,10 @@ public class Database {
                 string.append('0');
             }
 
+        // Handle Numbers
+        } else if (data instanceof Number) {
+            string.append(field.get(object));
+
         // Everything Else Surround in Quotes
         } else {
             string.append("'").append(field.get(object)).append("'");

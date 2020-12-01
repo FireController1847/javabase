@@ -9,7 +9,7 @@
     <description>A utility dependency to allow easy database connection and manipulation.</description>
     <groupId>com.visualfiredev</groupId>
     <artifactId>javabase</artifactId>
-    <version>0.0.1</version>
+    <version>${projectVersion}</version>
     <packaging>jar</packaging>
 
     <!-- Project Metadata -->
@@ -39,7 +39,9 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.source>1.8</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>
+        <actualVersion>0.0.1</actualVersion>
         <fileVersion>INVALID</fileVersion>
+        <projectVersion>INVALID</projectVersion>
     </properties>
 
     <!-- Project Profiles -->
@@ -49,7 +51,8 @@
             <id>snapshot</id>
             <properties>
                 <!--suppress UnresolvedMavenProperty -->
-                <fileVersion>${project.version}-SNAPSHOT-${git.commit.id.abbrev}</fileVersion>
+                <fileVersion>${projectVersion}-${git.commit.id.abbrev}</fileVersion>
+                <projectVersion>${actualVersion}-SNAPSHOT</projectVersion>
             </properties>
         </profile>
 
@@ -57,7 +60,8 @@
         <profile>
             <id>release</id>
             <properties>
-                <fileVersion>${project.version}</fileVersion>
+                <fileVersion>${projectVersion}</fileVersion>
+                <projectVersion>${actualVersion}</projectVersion>
             </properties>
         </profile>
     </profiles>
@@ -65,14 +69,14 @@
     <!-- Distribution -->
     <distributionManagement>
         <repository>
-            <id>nexus</id>
+            <id>ossrh</id>
             <name>Nexus</name>
-            <url></url>
+            <url>https://oss.sonatype.org/service/local/staging/deploy/maven2</url>
         </repository>
         <snapshotRepository>
-            <id>nexus-snapshot</id>
+            <id>ossrh</id>
             <name>Nexus Snapshot</name>
-            <url></url>
+            <url>https://oss.sonatype.org/content/repositories/snapshots</url>
         </snapshotRepository>
     </distributionManagement>
 
@@ -98,13 +102,6 @@
                 </executions>
             </plugin>
 
-            <!-- Maven Source plugin -->
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-source-plugin</artifactId>
-                <version>3.2.1</version>
-            </plugin>
-
             <!-- Maven Compiler Plugin -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -114,6 +111,21 @@
                     <source>${maven.compiler.source}</source>
                     <target>${maven.compiler.target}</target>
                 </configuration>
+            </plugin>
+
+            <!-- Maven Source plugin -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-source-plugin</artifactId>
+                <version>3.2.1</version>
+                <executions>
+                    <execution>
+                        <id>attach-sources</id>
+                        <goals>
+                            <goal>jar-no-fork</goal>
+                        </goals>
+                    </execution>
+                </executions>
             </plugin>
 
             <!-- Maven Javadoc Plugin -->
@@ -163,8 +175,9 @@
                     </execution>
                 </executions>
                 <configuration>
-                    <serverId>nexus</serverId>
+                    <serverId>ossrh</serverId>
                     <nexusUrl>https://oss.sonatype.org/</nexusUrl>
+                    <autoReleaseAfterClose>true</autoReleaseAfterClose>
                 </configuration>
             </plugin>
 
@@ -181,6 +194,36 @@
             <artifactId>annotations</artifactId>
             <version>20.1.0</version>
             <scope>compile</scope>
+        </dependency>
+
+        <!-- TESTS: JUnit -->
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <version>5.7.0</version>
+            <scope>test</scope>
+        </dependency>
+
+        <!-- TESTS: MySQL Connector -->
+        <dependency>
+            <groupId>mysql</groupId>
+            <artifactId>mysql-connector-java</artifactId>
+            <version>8.0.22</version>
+            <scope>test</scope>
+        </dependency>
+
+        <!-- TESTS: MariaDB Connector -->
+        <dependency>
+            <groupId>org.mariadb.jdbc</groupId>
+            <artifactId>mariadb-java-client</artifactId>
+            <version>2.7.0</version>
+        </dependency>
+
+        <!-- TESTS: SQLite Connector -->
+        <dependency>
+            <groupId>org.xerial</groupId>
+            <artifactId>sqlite-jdbc</artifactId>
+            <version>3.32.3.2</version>
         </dependency>
 
     </dependencies>
