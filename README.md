@@ -1,6 +1,20 @@
 # Javabase
 Javabase is a utility dependency to allow easy database connections in Java.
 
+**Table of Contents**
+- [Usage](#usage)
+  - [Connecting](#connecting)
+  - [Schemas](#schemas)
+  - [Creating & Dropping Tables](#creating--dropping-tables)
+  - [Objects](#objects)
+  - [Inserting Data](#inserting-data)
+  - [Selecting Data](#selecting-data)
+  - [Updating Data](#updating-data)
+  - [Deleting Data](#deleting-data)
+  - [Converting to and from DatabaseValues](#converting-to-and-from-databasevalues)
+  - [Raw SQL Statements](#raw-sql-statements)
+
+
 ## Usage
 I believe in learning through examples, so while I explain a lot of what is happening,
 most of the code will be provided through examples.
@@ -369,6 +383,18 @@ ArrayList<IceCreamFlavor> flavorResults = result.toObjects(IceCreamFlavor.TABLE_
 ```
 Though usage of this is discouraged, since it's basically just an alias for selecting data by
 passing the object class.
+
+### Raw SQL Statements
+You can also run raw SQL on the database, if required at any point in time. Javabase allows
+this through three primary methods: `Database#rawUpdate`, `Database#rawQuery`, and `Database#raw`,
+all relating to the Java-implemented methods of `Connection#executeUpdate`, `Connection#executeQuery`,
+and `Connection#execute` respectively.
+
+Of note, when using `Database#rawQuery`, it returns a java-based `ResultSet`. You can
+easily convert this to a `DatabaseResult` by passing it as a constructor:
+```java
+DatabaseResult result = new DatabaseResult(resultSet);
+```
 
 ### That's all folks!
 Congratulations for completing the usage guide! Now give yourself a pat on the back,
