@@ -501,6 +501,61 @@ public class Database {
     }
 
     /**
+     * Deletes data from the database using the specified expression.
+     *
+     * <p>
+     *     Due to the same reasons behind {@link Database#select(TableSchema, String, int)}, the WHERE statement
+     *     is up to the user, making this statement **not cross-comtpaible**. Please ensure you know which database
+     *     you are using, likely using the {@link Database#getType()} method, when using the "WHERE" clause.
+     * </p>
+     *
+     * @param tableSchema The table to delete from.
+     * @param where The platform-dependent SQL statement for a "WHERE" clause.
+     * @throws NotConnectedException Thrown if there is no connection to the database.
+     * @throws SQLException Thrown if running the generate SQL statement failed.
+     */
+    public void delete(TableSchema tableSchema, String where) throws NotConnectedException, SQLException {
+        // Ensure Connected
+        if (!this.isConnected()) {
+            throw new NotConnectedException();
+        }
+
+        // Create Statement
+        Statement statement = connection.createStatement();
+
+        // Create SQL
+        StringBuilder sql = new StringBuilder("DELETE FROM ").append(tableSchema.getName());
+
+        // Where...
+        if (!where.isEmpty()) {
+            sql.append(" WHERE ").append(where);
+        }
+
+        System.out.println(sql);
+
+        // Execute
+        try {
+            statement.executeUpdate(sql.toString());
+        } catch (SQLException e) {
+            throw new SQLException("Invalid TableSchema or possible library error! SQL Statement Created: " + sql, e);
+        }
+    }
+
+    /**
+     * Deletes every row from the specified table.
+     * See {@link Database#delete(TableSchema, String)} for more information.
+     *
+     * @param tableSchema The table to delete every row from.
+     * @throws NotConnectedException Thrown if there is no connection to the database.
+     * @throws SQLException Thrown if running the generate SQL statement failed.
+     */
+    public void delete(TableSchema tableSchema) throws NotConnectedException, SQLException {
+        delete(tableSchema, "");
+    }
+
+    
+
+    /**
      * Executes an SQL update directly on the connection. See {@link Statement#executeUpdate(String)}
      * 
      * @param sql The SQL update to be executed.
@@ -513,9 +568,14 @@ public class Database {
 
     /**
      * Executes an SQL query directly on the connection. See {@link Statement#executeQuery(String)}
+     *
+     * <p>
+     *     Please note that you can easily convert a ResultSet into a {@link DatabaseResult} by passing
+     *     the ResultSet in the constructor as so: {@link DatabaseResult#DatabaseResult(ResultSet)}.
+     * </p>
      * 
      * @param sql The SQL query to be executed.
-     * @return The Java ResultSet in response (optionally, turn it into a DatabaseResult by passing it in the constructor, ex `new DatabaseResult(resultSet)`).
+     * @return The Java ResultSet in response.
      * @throws SQLException Thrown if something goes wrong.
      */
     public ResultSet rawQuery(String sql) throws SQLException {
