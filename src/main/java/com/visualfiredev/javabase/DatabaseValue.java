@@ -84,6 +84,10 @@ public class DatabaseValue {
      *     Field names of the class. It may throw various exceptions relating to reflection if there is no
      *     alignment between the TableSchema and the T object.
      *
+     *     When a field is a boolean value and the database contains an integer, the field will be TRUE if
+     *     the integer is greater than zero, otherwise it will be FALSE if it the integer is less than or
+     *     equal to zero.
+     *
      *     **This is a case-insensitive operation, so column `EXAMPLE` will be mapped to a field named `example`.**
      * </p>
      *
@@ -113,7 +117,17 @@ public class DatabaseValue {
                 try {
                     Field field = fields.get(column.getName().toLowerCase());
                     if (field != null) {
-                        field.set(instance, value.getData());
+                        // Check for boolean
+                        if (value.getData() instanceof Integer && field.getType().isAssignableFrom(boolean.class)) {
+                            Integer data = (Integer) value.getData();
+                            if (data > 0) {
+                                field.set(instance, true);
+                            } else {
+                                field.set(instance, false);
+                            }
+                        } else {
+                            field.set(instance, value.getData());
+                        }
                     }
                 } catch (Exception e) {
                     throw new Exception("There was an internal error while attempting to insert the value for a field! Do the types line up?", e);
