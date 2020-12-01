@@ -7,6 +7,8 @@ import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.Date;
@@ -531,6 +533,9 @@ public class Database {
             sql.append(" WHERE ").append(where);
         }
 
+        // Close
+        sql.append(";");
+
         System.out.println(sql);
 
         // Execute
@@ -553,7 +558,72 @@ public class Database {
         delete(tableSchema, "");
     }
 
-    
+    /**
+     * Deletes data from the database using the specified {@link DatabaseObject}, comparing every non-transiend field in the object.
+     *
+     * @param object The {@link DatabaseObject} that contains the values that should be deleted.
+     * @throws Exception Thrown if there is an error while mapping values for the DatabaseObject.
+     */
+    public void delete(DatabaseObject object) throws Exception {
+        // Ensure Connected
+        if (!this.isConnected()) {
+            throw new NotConnectedException();
+        }
+
+        // Create Statement
+        Statement statement = connection.createStatement();
+
+        // Create SQL
+        StringBuilder sql = new StringBuilder("DELETE FROM ").append(object.getTableSchema().getName());
+
+        // Where...
+        sql.append(" WHERE ");
+
+        // Attempt to parse
+        ArrayList<Field> fields = getNonTransientFields(object.getClass());
+        for (int i = 0; i < fields.size(); i++) {
+            Field field = fields.get(i);
+            ColumnSchema column = object.getTableSchema().getColumnIgnoreCase(field.getName());
+            if (column != null) {
+                // Column Name
+                sql.append(column.getName().toUpperCase()).append(" = ");
+
+                // Handle Data Types
+                Object data = field.get(object);
+
+                // Handle Booleans
+                if (data instanceof Integer && field.getType().isAssignableFrom(boolean.class)) {
+                    Integer number = (Integer) data;
+                    if (number > 0) {
+                        sql.append('1');
+                    } else {
+                        sql.append('0');
+                    }
+
+                // Everything Else Surround in Quotes
+                } else {
+                    sql.append("'").append(field.get(object)).append("'");
+                }
+
+                // "AND"? Are there more?
+                if (i != fields.size() - 1) {
+                    sql.append(" AND ");
+                }
+            }
+        }
+
+        // Close
+        sql.append(";");
+
+        System.out.println(sql);
+
+        // Execute
+        try {
+            statement.executeUpdate(sql.toString());
+        } catch (SQLException e) {
+            throw new SQLException("Invalid TableSchema, DatabaseValues, or possible library error! SQL Statement Created: " + sql, e);
+        }
+    }
 
     /**
      * Executes an SQL update directly on the connection. See {@link Statement#executeUpdate(String)}
@@ -621,6 +691,25 @@ public class Database {
 
         // Return IsConnected
         return isConnected;
+    }
+
+    /**
+     * Reflexively fetches an array of the non-transient fields of a class.
+     *
+     * @param clazz The class to extract fields from.
+     * @return An ArrayList of fields.
+     */
+    protected static ArrayList<Field> getNonTransientFields(Class clazz) {
+        ArrayList<Field> fields = new ArrayList<>();
+        for (Field field : clazz.getDeclaredFields()) {
+            if (Modifier.isTransient(field.getModifiers())) {
+                continue;
+            }
+
+            field.setAccessible(true);
+            fields.add(field);
+        }
+        return fields;
     }
 
     /**

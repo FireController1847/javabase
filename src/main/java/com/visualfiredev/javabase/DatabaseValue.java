@@ -50,15 +50,7 @@ public class DatabaseValue {
      */
     public static <T> DatabaseValue[] fromObject(TableSchema tableSchema, T instance) throws Exception {
         // Get Fields
-        ArrayList<Field> fields = new ArrayList<>();
-        for (Field field : instance.getClass().getDeclaredFields()) {
-            if (Modifier.isTransient(field.getModifiers())) {
-                continue;
-            }
-
-            field.setAccessible(true);
-            fields.add(field);
-        }
+        ArrayList<Field> fields = Database.getNonTransientFields(instance.getClass());
 
         // Map Fields to Values
         ArrayList<DatabaseValue> values = new ArrayList<>();
