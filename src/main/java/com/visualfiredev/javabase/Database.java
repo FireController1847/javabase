@@ -168,8 +168,6 @@ public class Database {
         // Create SQL
         String sql = tableSchema.toString(type);
 
-        System.out.println(sql);
-
         // Execute
         try {
             statement.executeUpdate(sql);
@@ -198,8 +196,6 @@ public class Database {
 
         // Create SQL
         String sql = "DROP TABLE " + tableSchema.getName();
-
-        System.out.println(sql);
 
         // Execute
         try {
@@ -266,8 +262,6 @@ public class Database {
 
         // Close
         sql.append(");");
-
-        System.out.println(sql);
 
         // Execute
         try {
@@ -349,8 +343,6 @@ public class Database {
         if (limit > -1) {
             sql.append(" LIMIT ").append(limit);
         }
-
-        System.out.println(sql);
 
         // Execute
         ResultSet set;
@@ -449,8 +441,6 @@ public class Database {
             sql.append(" LIMIT ").append(limit);
         }
 
-        System.out.println(sql);
-
         // Execute
         ResultSet set;
         try {
@@ -536,8 +526,6 @@ public class Database {
         // Close
         sql.append(";");
 
-        System.out.println(sql);
-
         // Execute
         try {
             statement.executeUpdate(sql.toString());
@@ -601,8 +589,6 @@ public class Database {
         // Close
         sql.append(";");
 
-        System.out.println(sql);
-
         // Execute
         try {
             statement.executeUpdate(sql.toString());
@@ -651,8 +637,6 @@ public class Database {
 
         // Close
         sql.append(";");
-
-        System.out.println(sql);
 
         // Execute
         try {
@@ -737,8 +721,6 @@ public class Database {
 
         // Close
         sql.append(";");
-
-        System.out.println(sql);
 
         // Execute
         try {
