@@ -2,6 +2,9 @@
 Javabase is a utility dependency to allow easy database connections in Java.
 
 **Table of Contents**
+- [Installation](#installation)
+  - [Dependency](#dependency)
+  - [Connectors](#connectors)
 - [Usage](#usage)
   - [Connecting](#connecting)
   - [Schemas](#schemas)
@@ -14,6 +17,51 @@ Javabase is a utility dependency to allow easy database connections in Java.
   - [Converting to and from DatabaseValues](#converting-to-and-from-databasevalues)
   - [Raw SQL Statements](#raw-sql-statements)
 
+
+## Installation
+### Dependency
+Installing Javabase is fairly simple. Just include it in your pom.xml like so:
+```xml
+<dependency>
+    <groupId>com.visualfiredev</groupId>
+    <artifactId>javabase</artifactId>
+    <version>0.0.1</version>
+</dependency>
+```
+
+To actually use Javabase, you must also include the SQL connector you wish to use
+for your project. Here are three common ones:
+
+### Connectors
+It's strongly recommended to use [Maven Repository](https://mvnrepository.com/) to find the
+latest version of each of these dependencies.
+
+#### MySQL
+```xml
+<dependency>
+  <groupId>mysql</groupId>
+  <artifactId>mysql-connector-java</artifactId>
+  <version>8.0.22</version>
+</dependency>
+```
+
+#### MariaDB
+```xml
+<dependency>
+    <groupId>org.mariadb.jdbc</groupId>
+    <artifactId>mariadb-java-client</artifactId>
+    <version>2.7.0</version>
+</dependency>
+```
+
+#### SQLite
+```
+<dependency>
+    <groupId>org.xerial</groupId>
+    <artifactId>sqlite-jdbc</artifactId>
+    <version>3.32.3.2</version>
+</dependency>
+```
 
 ## Usage
 I believe in learning through examples, so while I explain a lot of what is happening,
