@@ -45,12 +45,14 @@ public class DatabaseObject {
      *
      * @param tableSchema The TableSchema to be provided to the created object.
      * @param values The values that should be inserted into this object.
+     * @param clazz The class to create a new instance of. This cannot be assumed from the extended type.
+     * @param <T> The type of the object to be created.
      * @return A new DatabaseObject with the specified values.
      * @throws Exception Thrown if there is an internal error while mapping the values.
      */
-    public static DatabaseObject fromValues(TableSchema tableSchema, DatabaseValue[] values) throws Exception {
+    public static <T> T fromValues(TableSchema tableSchema, DatabaseValue[] values, Class<T> clazz) throws Exception {
         try {
-            return DatabaseValue.toObject(tableSchema, values, new DatabaseObject(tableSchema));
+            return DatabaseValue.toObject(tableSchema, values, clazz.getConstructor().newInstance());
         } catch (Exception e) {
             throw new Exception("There was an internal error while attempting to map the array of DatabaseValue's to this DatabaseObject.");
         }

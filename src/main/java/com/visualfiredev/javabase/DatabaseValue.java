@@ -56,7 +56,7 @@ public class DatabaseValue {
         ArrayList<DatabaseValue> values = new ArrayList<>();
         for (Field field : fields) {
             ColumnSchema column = tableSchema.getColumnIgnoreCase(field.getName());
-            if (column != null && !column.getName().toLowerCase().equals("id")) {
+            if (column != null && !(column.isPrimaryKey() && column.isAutoIncrement())) {
                 try {
                     values.add(new DatabaseValue(column.getName(), field.get(instance)));
                 } catch (ReflectiveOperationException e) {

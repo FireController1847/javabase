@@ -598,24 +598,21 @@ public class Database {
     }
 
     /**
-     * Updates data in the database using the specified 'SET' string and the specified 'WHERE' string.
+     * Updates data in the database using the specified {@link DatabaseValue}'s and the specified 'WHERE' string.
      *
      * <p>
-     *     As with WHERE, it is virtually impossible to provide cross-compatible statements for a "SET" expression,
-     *     so it is passed as **RAW SQL** in this method.
-     *
      *     For the same reasons as {@link Database#select(TableSchema, String, int)}, this method is
      *     **not cross-compatible**. It is up to the user to know the type of database they are working
      *     with, likely using the {@link Database#getType()} method, when using the "WHERE" clause.
      * </p>
      *
      * @param tableSchema The table to update.
-     * @param set The platform-dependent list of SQL "SET" statements.
      * @param where The platform-dependent SQL statement for a "WHERE" clause.
+     * @param set An array of {@link DatabaseValue}'s to be set.
      * @throws NotConnectedException Thrown if there is no connection to the database.
      * @throws SQLException Thrown if running the generated SQL statement failed.
      */
-    public void update(TableSchema tableSchema, String set, String where) throws NotConnectedException, SQLException {
+    public void update(TableSchema tableSchema, String where, DatabaseValue... set) throws NotConnectedException, SQLException {
         // Ensure Connected
         if (!this.isConnected()) {
             throw new NotConnectedException();
@@ -628,7 +625,16 @@ public class Database {
         StringBuilder sql = new StringBuilder("UPDATE ").append(tableSchema.getName());
 
         // Set...
-        sql.append(" SET ").append(set);
+        sql.append(" SET ");
+        for (int i = 0; i < set.length; i++) {
+            DatabaseValue value = set[i];
+            sql.append(value.getColumnName().toUpperCase()).append(" = ").append(value.getData());
+
+            // Comma? Are there more?
+            if (i != set.length - 1) {
+                sql.append(", ");
+            }
+        }
 
         // Where...
         if (!where.isEmpty()) {
@@ -647,16 +653,16 @@ public class Database {
     }
 
     /**
-     * Updates data in the database using the specified 'SET' string with no WHERE clause.
-     * See {@link Database#update(TableSchema, String, String)} for more information.
+     * Updates data in the database using the specified {@link DatabaseValue}'s with no "WHERE" string.
+     * See {@link Database#update(TableSchema, String, DatabaseValue...)} for more information.
      *
      * @param tableSchema The table to update.
-     * @param set The platform-dependent list of SQL "SET" statements.
+     * @param set An array of {@link DatabaseValue}'s to be set.
      * @throws NotConnectedException Thrown if there is no connection to the database.
      * @throws SQLException Thrown if running the generated SQL statement failed.
      */
-    public void update(TableSchema tableSchema, String set) throws NotConnectedException, SQLException {
-        update(tableSchema, set, "");
+    public void update(TableSchema tableSchema, DatabaseValue... set) throws NotConnectedException, SQLException {
+        update(tableSchema, "", set);
     }
 
     /**
