@@ -6,10 +6,33 @@
 
     <!-- Project Information -->
     <name>Javabase</name>
+    <description>A utility dependency to allow easy database connection and manipulation.</description>
     <groupId>com.visualfiredev</groupId>
     <artifactId>javabase</artifactId>
     <version>0.0.1</version>
     <packaging>jar</packaging>
+
+    <!-- Project Metadata -->
+    <url>https://github.com/FireController1847/javabase</url>
+    <developers>
+        <developer>
+            <name>FireController#1847</name>
+            <email>contact@visualfiredev.com</email>
+            <url>https://github.com/FireController1847</url>
+        </developer>
+    </developers>
+    <licenses>
+        <license>
+            <name>GNU General Public License v3.0</name>
+            <url>https://opensource.org/licenses/GPL-3.0</url>
+            <distribution>repo</distribution>
+        </license>
+    </licenses>
+    <scm>
+        <url>https://github.com/FireController1847/javabase</url>
+        <connection>scm:git:git@github.com:FireController1847/javabase.git</connection>
+        <developerConnection>scm:git:git@github.com:FireController1847/javabase.git</developerConnection>
+    </scm>
 
     <!-- Project Properties -->
     <properties>
@@ -39,6 +62,8 @@
         </profile>
     </profiles>
 
+    <!-- TODO: Distribution! -->
+
     <!-- Build -->
     <build>
         <finalName>Javabase-${fileVersion}</finalName>
@@ -61,6 +86,13 @@
                 </executions>
             </plugin>
 
+            <!-- Maven Source plugin -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-source-plugin</artifactId>
+                <version>3.2.1</version>
+            </plugin>
+
             <!-- Maven Compiler Plugin -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -70,6 +102,21 @@
                     <source>${maven.compiler.source}</source>
                     <target>${maven.compiler.target}</target>
                 </configuration>
+            </plugin>
+
+            <!-- Maven Javadoc Plugin -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-javadoc-plugin</artifactId>
+                <version>3.2.0</version>
+                <executions>
+                    <execution>
+                        <id>attach-javadoc</id>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                    </execution>
+                </executions>
             </plugin>
 
         </plugins>
