@@ -22,11 +22,6 @@ public class DatabaseObject {
     }
 
     /**
-     * A blank constructor to provide functionality that JavaBase requires.
-     */
-    public DatabaseObject() { }
-
-    /**
      * A method to provide a layer of abstraction from the {@link DatabaseValue#fromObject(TableSchema, Object)} method.
      *
      * @return An array of {@link DatabaseValue}'s corresponding to this object's fields.

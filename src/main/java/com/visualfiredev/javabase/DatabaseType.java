@@ -9,7 +9,7 @@ public enum DatabaseType {
      * Adds support for MySQL and the corresponding driver. Requires the MySQL connector.<br>
      * The recommended connector is <a href="https://github.com/mysql/mysql-connector-j" target="_blank">MySQL Connector J</a>.
      */
-    MySQL("com.mysql.jdbc.Driver"),
+    MySQL("com.mysql.cj.jdbc.Driver"),
 
     /**
      * Adds support for MariaDB and the corresponding driver. Requires the MariaDB connector.<br>

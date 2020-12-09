@@ -248,7 +248,9 @@ public class Database {
         sql.append(" VALUES(");
         for (int i = 0; i < values.length; i++) {
             Object data = values[i].getData();
-            if (data instanceof String) {
+            if (data != null && data.getClass() != null && data.getClass().isArray()) {
+                throw new SQLException("SQL values cannot be an array! If you must store an array, wrap it in a string. (Example: \"[One, Two Three]\")");
+            } else if (data instanceof String) {
                 sql.append("'").append(String.valueOf(data).replace("'", "\\'")).append("'");
             } else {
                 sql.append(data);

@@ -117,6 +117,16 @@ public class DatabaseValue {
                             } else {
                                 field.set(instance, false);
                             }
+
+                        // Handle Floats
+                        } else if (value.getData() instanceof Double && field.getType().isAssignableFrom(float.class)) {
+                            field.set(instance, (float) ((double) value.getData()));
+
+                        // Handle Bytes
+                        } else if (value.getData() instanceof Integer && field.getType().isAssignableFrom(byte.class)) {
+                            field.set(instance, (byte) ((int) value.getData()));
+
+                        // Everything Else
                         } else {
                             field.set(instance, value.getData());
                         }
