@@ -74,10 +74,8 @@ public class Database {
         // Create Properties for MySQL and MariaDB
         Properties properties = new Properties();
         if (type == DatabaseType.MySQL || type == DatabaseType.MariaDB) {
-            properties.put("autoReconnect", true); // TODO: Make optional
             properties.put("user", username);
             properties.put("password", password);
-            properties.put("useSSL", "false"); // TODO: SSL support
         }
 
         // Create Location
@@ -89,9 +87,18 @@ public class Database {
             new File(database).createNewFile();
         }
 
+        // Create Connection String
+        String constr = "jdbc:" + type.toString().toLowerCase() + ":" + location;
+
+        // Add arguments
+        if (type == DatabaseType.MySQL || type == DatabaseType.MariaDB) {
+            constr += "?autoReconnect=true"; // TODO: Make autoReconnect optional
+            constr += "&useSSL=false"; // TODO: Add SSL support
+        }
+
         // Connect
         try {
-            connection = driver.connect("jdbc:" + type.toString().toLowerCase() + ":" + location, properties);
+            connection = driver.connect(constr, properties);
         } catch (SQLException e) {
             throw new ConnectionFailedException(e);
         }
@@ -792,11 +799,13 @@ public class Database {
 
         // Connection Cache
         long now = new Date().getTime();
-        if (lastConnectionCheck != 0 || now - lastConnectionCheck >= 5000) { // TODO: HARD-CODED 5000 MILLISECONDS CACHE
+        if (lastConnectionCheck != 0 || now - lastConnectionCheck >= 2500) { // TODO: HARD-CODED 2500 MILLISECONDS CACHE
             lastConnectionCheck = now;
 
+            // Check Connection
             try {
-                isConnected = connection != null && connection.isValid(3);
+                connection.setAutoCommit(true);
+                isConnected = connection != null && connection.isValid(5); // TODO: HARD-CODED 5 SECOND TIMEOUT
             } catch (SQLException e) {
                 isConnected = false;
             }
