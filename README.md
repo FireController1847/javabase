@@ -25,7 +25,7 @@ Installing Javabase is fairly simple. Just include it in your pom.xml like so:
 <dependency>
     <groupId>com.visualfiredev</groupId>
     <artifactId>javabase</artifactId>
-    <version>0.0.3</version>
+    <version>0.0.4</version>
 </dependency>
 ```
 
