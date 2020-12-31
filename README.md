@@ -84,29 +84,19 @@ throughout your application.
 In this example, I create a TableSchema for different ice cream flavors. I will create a table
 called "ice_cream_flavors", with three columns: "Id", which is the primary key and will auto increment,
 "Name", which is a VARCHAR with a length of 20, and "Sprinkles", which is a boolean value.
-
-This table will also automatically replace any existing tables as specified by `TabelSchema#setOrReplace(true)`.
 ```java
 TableSchema ice_cream_schema = new TableSchema("ice_cream_flavors",
     new ColumnSchema("Id", DataType.INTEGER).setPrimaryKey(true).setAutoIncrement(true),
     new ColumnSchema("Name", DataType.VARCHAR, 20),
     new ColumnSchema("Sprinkles", DataType.TINYINT, 1)
-).setOrReplace(true);
-```
-
-#### Example 2: SQLite
-Following Example 1, I will create the same table but with support for SQLite. Notice
-how this table does not support the "orReplace" option or any data lengths.
-
-```java
-TableSchema sqlite_ice_cream_schema = new TableSchema("ice_cream_flavors",
-    new ColumnSchema("Id", DataType.INTEGER).setPrimaryKey(true).setAutoIncrement(true),
-    new ColumnSchema("Name", DataType.TEXT),
-    new ColumnSchema("Sprinkles", DataType.INTEGER)
 );
 ```
+If your database is of the SQLite type, the incompatible data types will be automatically converted
+to their nearest equivilent. So `DataType.VARCHAR` will become `DataType.TEXT` and `DataType.TINYINT`
+will become `DataType.INTEGER`. This allows you to create one table schema for the entire database
+and not have to worry about conversions if you choose to switch later.
 
-#### Example 3: Selection Schema
+#### Example 2: Selection Schema
 Now let's say I wanted to select all of the Ice Cream Flavors, but I only wanted the name in the result.
 This is actually incredibly simple. If we kept our schema from Example 1, we would only need to call
 the following methods.
@@ -123,23 +113,32 @@ TableSchema select = new TableSchema("ice_cream_flavors",
 );
 ```
 
+#### Example 3: Foreign Keys
+To support foreign keys, you must first create the TableSchema that contains the foreign key. Then
+you can add it as an option in one of your columns:
+```java
+TableSchema purchase_schema = new TableSchema("purchases",
+    new ColumnSchema("Id", DataType.INTEGER).setPrimaryKey(true).setAutoIncrement(true),
+    new ColumnSchema("Ice_Cream_Id", DataType.INTEGER).setForeignKey(ice_cream_schema, ice_cream_schema.getColumn("Id"))
+);
+```
+Javabase will automatically handle the creation of the constraint.
+
+Note: When dropping tables, ensure to drop the tables in the reverse order to which they were
+created, otherwise you may run into Foreign Key errors as you would in a CLI. For example,
+if I tried to drop the `ice_cream_schema` before I dropped the `purchase_schema`, because
+the `purchase_schema` depends on the `ice_cream_schema`, it would fail.
+
 ### Creating & Dropping Tables
 Creating & dropping tables is extremely simple. Just pass the TableSchema to `Database#createTable`
-or `Database#dropTable` and off you go.
-If you wish to use a modifier such as "IF NOT EXISTS" or "OR REPLACE", you set these upon TableSchema creation.
+or `Database#dropTable` and off you go. If you wish to use the modifier "IF NOT EXISTS", you set
+these upon TableSchema creation. For a modifier similar to "OR REPLACE", a boolean can be passed
+to `Database#createTable` as to whether or not it should replace existing tables.
 
-#### Example 1: MySQL / MariaDB
+#### Example 1: Creation
+The following example will replace any existing tables and create a new one.
 ```java
-database.createTable(ice_cream_schema);
-```
-
-#### Example 2: SQLite
-For databases that do not support "OR REPLACE", you can use the following code:
-```java
-if (database.doesTableExist(ice_cream_schema)) {
-    database.dropTable(ice_cream_schema);
-}
-database.createTable(ice_cream_schema);
+database.createTable(ice_cream_schema, true);
 ```
 
 ### Objects
@@ -364,7 +363,7 @@ database.update(IceCreamFlavor.TABLE_SCHEMA, "NAME = 'Strawberry'",
 ```
 
 ### Deleting Data
-Deleting data is as essentials as inserting data. Luckily, this library makes it extremely simple as well.
+Deleting data is as essential as inserting data. Luckily, this library makes it extremely simple as well.
 
 #### Example: Removing A Flavor
 For this example, imagine we have already selected a `vanillaDb` object, similar
@@ -372,7 +371,7 @@ to our `chocolateDb` object from before.
 
 ##### Using "Where"
 Using a where statement to delete something from the database is recommended over using objects,
-due to its ability to have more control over what is delected, and removing the requirement for
+due to its ability to have more control over what is selected, and removing the requirement for
 objects to be 100% identical.
 
 An example of removing the vanilla flavor from the database works as follows:
