@@ -154,19 +154,24 @@ public class Database {
     }
 
     /**
-     * Creates a table (depending on if it exists or not) using the specified {@link com.visualfiredev.javabase.schema.TableSchema}.
-     * TODO: Make this return a "table" object and not void
+     * Creates a table (depending on if it exists or not) using the specified {@link TableSchema}.
      *
-     * @param tableSchema The {@link com.visualfiredev.javabase.schema.TableSchema} the table should be based on.
+     * @param tableSchema The {@link TableSchema} the table should be based on.
+     * @param replace Whether or not to replace this table if it exists.
      * @throws NotConnectedException Thrown if there is no connection to the database.
      * @throws SQLException Thrown if creating the table failed.
-     * @throws UnsupportedDatabaseTypeException Thrown if any {@link com.visualfiredev.javabase.schema.ColumnSchema}'s do not support this type of database.
+     * @throws UnsupportedDatabaseTypeException Thrown if any {@link ColumnSchema}'s do not support this type of database.
      * @throws UnsupportedFeatureException Thrown if a feature was enabled that this database does not support.
      */
-    public void createTable(TableSchema tableSchema) throws NotConnectedException, SQLException, UnsupportedDatabaseTypeException, UnsupportedFeatureException {
+    public void createTable(TableSchema tableSchema, boolean replace) throws NotConnectedException, SQLException, UnsupportedDatabaseTypeException, UnsupportedFeatureException {
         // Ensure Connected
         if (!this.isConnected()) {
             throw new NotConnectedException();
+        }
+
+        // Check if the table exists (if table has ifNotExists set to true)
+        if (replace && this.doesTableExist(tableSchema)) {
+            this.dropTable(tableSchema);
         }
 
         // Create Statement
@@ -181,6 +186,18 @@ public class Database {
         } catch (SQLException e) {
             throw new SQLException("Invalid TableSchema or possible library error! SQL Statement Created: " + sql, e);
         }
+    }
+
+    /**
+     * Creates a table (depending on if it exists or not) using the specified {@link TableSchema} without replacing it if it exists.
+     * @param tableSchema The {@link TableSchema} the table should be based on.
+     * @throws NotConnectedException Thrown if there is no connection to the database.
+     * @throws SQLException Thrown if creating the table failed.
+     * @throws UnsupportedDatabaseTypeException Thrown if any {@link ColumnSchema}'s do not support this type of database.
+     * @throws UnsupportedFeatureException Thrown if a feature was enabled that this database does not support.
+     */
+    public void createTable(TableSchema tableSchema) throws NotConnectedException, SQLException, UnsupportedDatabaseTypeException, UnsupportedFeatureException {
+        this.createTable(tableSchema, false);
     }
 
     // TODO: Create table like? God I have so much to work do...

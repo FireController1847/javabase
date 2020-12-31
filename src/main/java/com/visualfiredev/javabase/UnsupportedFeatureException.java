@@ -15,4 +15,13 @@ public class UnsupportedFeatureException extends Exception {
         super(databaseType.toString() + " does not support the following feature: " + feature);
     }
 
+    /**
+     * Constructs a new UnsupportedFeatureException using the specified feature string and no specific database type.
+     *
+     * @param feature The feature that Javabase does not support.
+     */
+    public UnsupportedFeatureException(String feature) {
+        super("Unsupported feature! " + feature);
+    }
+
 }

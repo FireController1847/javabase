@@ -3,6 +3,7 @@ package com.visualfiredev.javabase.schema;
 import com.visualfiredev.javabase.DataType;
 import com.visualfiredev.javabase.DatabaseType;
 import com.visualfiredev.javabase.UnsupportedDatabaseTypeException;
+import com.visualfiredev.javabase.UnsupportedFeatureException;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -19,6 +20,8 @@ public class ColumnSchema {
     // Column Options
     // TODO: Not all column options are supported.
     private Object defaultValue = null;
+    private TableSchema foreignTable = null;
+    private ColumnSchema foreignKey = null;
     private boolean isPrimaryKey = false;
     private boolean isUniqueKey = false;
     private boolean isAutoIncrement = false;
@@ -48,12 +51,31 @@ public class ColumnSchema {
     }
 
     /**
-     * Returns the default value of this ColumnSchema.
-     * @return The default value of this ColumnSchema.
+     * Returns the default value of this ColumnSchema or null if there is not one.
+     * @return The default value of this ColumnSchema or null if there is not one.
      */
     @Nullable
     public Object getDefaultValue() {
         return defaultValue;
+    }
+
+    /**
+     * Returns the foreign key ColumnSchema for this ColumnSchema or null if there is not one.
+     * @return The foreign key ColumnSchema for this ColumnSchema or null if there is not one.
+     */
+    @Nullable
+    public ColumnSchema getForeignKey() {
+        return foreignKey;
+    }
+
+    /**
+     * Gets the foreign table that relates to the {@link ColumnSchema#getForeignKey()}.
+     *
+     * @return The foreign table relating to the {@link ColumnSchema#getForeignKey()}.
+     */
+    @Nullable
+    public TableSchema getForeignTable() {
+        return foreignTable;
     }
 
     /**
@@ -122,6 +144,20 @@ public class ColumnSchema {
      */
     public ColumnSchema setDefaultValue(@Nullable Object defaultValue) {
         this.defaultValue = defaultValue;
+        return this;
+    }
+
+    /**
+     * Sets the foreign key value for this column schema. This will change your data type to match the foreign key's.
+     * Ensure that you create the table contains the referring key BEFORE this the table containing this column.
+     *
+     * @param foreignTable The table that this foreign key belongs to.
+     * @param foreignKey The foreign key / ColumnSchema from another table.
+     */
+    public ColumnSchema setForeignKey(TableSchema foreignTable, ColumnSchema foreignKey) {
+        this.foreignTable = foreignTable;
+        this.foreignKey = foreignKey;
+        this.dataType = foreignKey.getDataType(); // Do I need to do this or should I rely on the user to pass the right data type?
         return this;
     }
 
@@ -203,9 +239,14 @@ public class ColumnSchema {
      * @return The stringified version of this column schema.
      * @throws UnsupportedDatabaseTypeException Thrown if this {@link com.visualfiredev.javabase.schema.ColumnSchema} does not support the specified {@link com.visualfiredev.javabase.DatabaseType}.
      */
-    public String toString(DatabaseType databaseType) throws UnsupportedDatabaseTypeException {
+    public String toString(DatabaseType databaseType) throws UnsupportedFeatureException, UnsupportedDatabaseTypeException {
         // Get Compatible Type
         DataType compatibleType = DataType.getClosestSupportedDataType(this.getDataType(), databaseType);
+
+        // Check Foreign Key Conflicts
+        if (this.getForeignKey() != null && (this.isPrimaryKey() || this.isUniqueKey() || this.isAutoIncrement())) {
+            throw new UnsupportedFeatureException("Foreign keys cannot also be primary keys or unique keys and cannot auto increment!");
+        }
 
         // Create String & Add Name
         StringBuilder sql = new StringBuilder(this.getName());
@@ -267,6 +308,8 @@ public class ColumnSchema {
                 ", dataType=" + dataType +
                 ", value=" + value +
                 ", defaultValue=" + defaultValue +
+                ", foreignTable=" + foreignTable +
+                ", foreignKey=" + foreignKey +
                 ", isPrimaryKey=" + isPrimaryKey +
                 ", isUniqueKey=" + isUniqueKey +
                 ", isAutoIncrement=" + isAutoIncrement +

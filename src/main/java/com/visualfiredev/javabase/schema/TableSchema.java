@@ -7,6 +7,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.stream.Collectors;
 
 /**
  * Defines a schema for a table.
@@ -19,7 +20,6 @@ public class TableSchema implements Cloneable {
 
     // Table Options
     private boolean ifNotExists = false;
-    private boolean orReplace = false;
 
     /**
      * Creates a new table schema using the specified name and columns. Other arguments can be set after construction.
@@ -38,14 +38,6 @@ public class TableSchema implements Cloneable {
      */
     public boolean isIfNotExists() {
         return ifNotExists;
-    }
-
-    /**
-     * Returns whether or not this schema includes "OR REPLACE"
-     * @return Whether or not this schema includes "OR REPLACE"
-     */
-    public boolean isOrReplace() {
-        return orReplace;
     }
 
     /**
@@ -100,18 +92,6 @@ public class TableSchema implements Cloneable {
      */
     public TableSchema setIfNotExists(boolean ifNotExists) {
         this.ifNotExists = ifNotExists;
-        return this;
-    }
-
-    /**
-     * Sets whether or not this table should include "OR REPLACE"<br>
-     * WARNING: Unsupported by SQLite.
-     *
-     * @param orReplace Whether or not this table should include "OR REPLACE"
-     * @return The TableSchema.
-     */
-    public TableSchema setOrReplace(boolean orReplace) {
-        this.orReplace = orReplace;
         return this;
     }
 
@@ -179,20 +159,12 @@ public class TableSchema implements Cloneable {
      */
     @NotNull
     public String toString(@NotNull DatabaseType databaseType) throws UnsupportedDatabaseTypeException, UnsupportedFeatureException {
-        // Validate Features
-        // Note: Weirdly enough, MySQL does not support `CREATE OR REPLACE TABLE`, but MariaDB does.
-        if ((databaseType == DatabaseType.SQLite || databaseType == DatabaseType.MySQL) && orReplace) {
-            throw new UnsupportedFeatureException(databaseType, "CREATE OR REPLACE TABLE");
-        }
-
         // Create String
         StringBuilder sql = new StringBuilder("CREATE ");
 
         // If Not Exists
         if (ifNotExists) {
             sql.append("TABLE IF NOT EXISTS ");
-        } else if (orReplace) {
-            sql.append("OR REPLACE TABLE ");
         } else {
             sql.append("TABLE ");
         }
@@ -212,6 +184,31 @@ public class TableSchema implements Cloneable {
             }
         }
 
+        // Foreign Keys
+        ArrayList<ColumnSchema> foreignColumns = columns.stream().filter(c -> c.getForeignKey() != null).collect(Collectors.toCollection(ArrayList::new));
+        for (int i = 0; i < foreignColumns.size(); i++) {
+            // Initial Comma
+            if (i == 0) {
+                sql.append(", ");
+            }
+
+            // Get Column
+            ColumnSchema column = foreignColumns.get(i);
+            ColumnSchema foreignColumn = column.getForeignKey();
+            TableSchema foreignTable = column.getForeignTable();
+
+            // Append Constraint
+            sql.append("CONSTRAINT ").append("fk_").append(this.getName()).append("_").append(foreignTable.getName()).append("_").append(column.getName());
+
+            // Append Foreign Key
+            sql.append(" FOREIGN KEY (").append(column.getName()).append(") REFERENCES ").append(foreignTable.getName()).append("(").append(foreignColumn.getName()).append(")");
+
+            // Comma? Are there more?
+            if (i != foreignColumns.size() - 1) {
+                sql.append(", ");
+            }
+        }
+
         // Close
         sql.append(" );");
 
@@ -225,7 +222,6 @@ public class TableSchema implements Cloneable {
                 "name='" + name + '\'' +
                 ", columns=" + columns +
                 ", ifNotExists=" + ifNotExists +
-                ", orReplace=" + orReplace +
                 '}';
     }
 
