@@ -212,16 +212,86 @@ public enum DataType {
 
     /**
      * Determines whether or not this DataType is valid for the corresponding DatabaseType.
-     * @param typeIn The database type to compare.
+     * @param databaseType The database type to compare.
      * @return True if this data type can be used in this database, false otherwise.
      */
-    public boolean supportsDatabaseType(@NotNull DatabaseType typeIn) {
+    public boolean supportsDatabaseType(@NotNull DatabaseType databaseType) {
         for (int i = 0; i < supportedTypes.length; i++) {
-            if (supportedTypes[i] == typeIn) {
+            if (supportedTypes[i] == databaseType) {
                 return true;
             }
         }
         return false;
+    }
+
+    public static DataType getClosestSupportedDataType(@NotNull DataType type, @NotNull DatabaseType databaseType) throws UnsupportedDatabaseTypeException {
+        // If the type is supported, return the type
+        if (type.supportsDatabaseType(databaseType)) {
+            return type;
+        }
+
+        // Time for fun...
+        if (databaseType == DatabaseType.SQLite) {
+            // Integers
+            if (type == DataType.BIT) {
+                return DataType.INTEGER;
+            } else if (type == DataType.TINYINT) {
+                return DataType.INTEGER;
+            } else if (type == DataType.SMALLINT) {
+                return DataType.INTEGER;
+            } else if (type == DataType.MEDIUMINT) {
+                return DataType.INTEGER;
+            } else if (type == DataType.BIGINT) {
+                return DataType.INTEGER;
+
+            // Floats
+            } else if (type == DataType.DOUBLE) {
+                return DataType.FLOAT;
+            } else if (type == DataType.DECIMAL) {
+                return DataType.FLOAT;
+            } else if (type == DataType.NUMERIC) {
+                return DataType.FLOAT;
+
+            // Texts
+            } else if (type == DataType.DATE) {
+                return DataType.TEXT;
+            } else if (type == DataType.DATETIME) {
+                return DataType.TEXT;
+            } else if (type == DataType.TIMESTAMP) {
+                return DataType.TEXT;
+            } else if (type == DataType.TIME) {
+                return DataType.TEXT;
+            } else if (type == DataType.YEAR) {
+                return DataType.TEXT;
+            } else if (type == DataType.CHAR) {
+                return DataType.TEXT;
+            } else if (type == DataType.VARCHAR) {
+                return DataType.TEXT;
+            } else if (type == DataType.TINYTEXT) {
+                return DataType.TEXT;
+            } else if (type == DataType.MEDIUMTEXT) {
+                return DataType.TEXT;
+            } else if (type == DataType.LONGTEXT) {
+                return DataType.TEXT;
+            } else if (type == DataType.JSON) {
+                return DataType.TEXT;
+
+            // Blobs
+            } else if (type == DataType.BINARY) {
+                return DataType.BLOB;
+            } else if (type == DataType.VARBINARY) {
+                return DataType.BLOB;
+            } else if (type == DataType.TINYBLOB) {
+                return DataType.BLOB;
+            } else if (type == DataType.MEDIUMBLOB) {
+                return DataType.BLOB;
+            } else if (type == DataType.LONGBLOB) {
+                return DataType.BLOB;
+            }
+        }
+
+        // If we have yet to return the closest type, consider it unsupported
+        throw new UnsupportedDatabaseTypeException(type, databaseType);
     }
 
     /**

@@ -48,20 +48,6 @@ public class ColumnSchema {
     }
 
     /**
-     * Checks whether or not this ColumnSchema supports the passed {@link com.visualfiredev.javabase.DatabaseType}.
-     *
-     * @param databaseType The {@link com.visualfiredev.javabase.DatabaseType} to check if is supported.
-     * @return True if the {@link com.visualfiredev.javabase.DataType} associated with this column schema supports the passed database type, otherwise false.
-     */
-    public boolean supportsDatabaseType(DatabaseType databaseType) {
-        if (!dataType.supportsDatabaseType(databaseType)) {
-            return false;
-        } else {
-            return true;
-        }
-    }
-
-    /**
      * Returns the default value of this ColumnSchema.
      * @return The default value of this ColumnSchema.
      */
@@ -218,16 +204,14 @@ public class ColumnSchema {
      * @throws UnsupportedDatabaseTypeException Thrown if this {@link com.visualfiredev.javabase.schema.ColumnSchema} does not support the specified {@link com.visualfiredev.javabase.DatabaseType}.
      */
     public String toString(DatabaseType databaseType) throws UnsupportedDatabaseTypeException {
-        // Confirm Support
-        if (!this.supportsDatabaseType(databaseType)) {
-            throw new UnsupportedDatabaseTypeException(this.getDataType(), databaseType);
-        }
+        // Get Compatible Type
+        DataType compatibleType = DataType.getClosestSupportedDataType(this.getDataType(), databaseType);
 
         // Create String & Add Name
         StringBuilder sql = new StringBuilder(this.getName());
 
         // Append DataType
-        sql.append(" ").append(this.getDataType());
+        sql.append(" ").append(compatibleType);
 
         // Append Value (If Exists)
         String val = this.getValue();
