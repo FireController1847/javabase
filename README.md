@@ -26,7 +26,7 @@ Installing Javabase is fairly simple. Just include it in your pom.xml like so:
 <dependency>
     <groupId>com.visualfiredev</groupId>
     <artifactId>javabase</artifactId>
-    <version>0.0.4</version>
+    <version>0.1.0</version>
 </dependency>
 ```
 
@@ -42,7 +42,7 @@ latest version of each of these dependencies.
 <dependency>
   <groupId>mysql</groupId>
   <artifactId>mysql-connector-java</artifactId>
-  <version>8.0.22</version>
+  <version>8.0.23</version>
 </dependency>
 ```
 
@@ -51,7 +51,7 @@ latest version of each of these dependencies.
 <dependency>
     <groupId>org.mariadb.jdbc</groupId>
     <artifactId>mariadb-java-client</artifactId>
-    <version>2.7.0</version>
+    <version>2.7.2</version>
 </dependency>
 ```
 
