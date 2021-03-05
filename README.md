@@ -12,6 +12,7 @@ Javabase is a utility dependency to allow easy database connections in Java.
   - [Objects](#objects)
   - [Inserting Data](#inserting-data)
   - [Selecting Data](#selecting-data)
+  - [Injection Protection](#injection-protection)
   - [Updating Data](#updating-data)
   - [Deleting Data](#deleting-data)
   - [Converting to and from DatabaseValues](#converting-to-and-from-databasevalues)
@@ -307,7 +308,7 @@ the implementation has the user insert raw SQL for the "where" statement. Howeve
 ever used SQL before, this should not be too much of an issue. We can still cast to our objects
 like before, however we now provide an extra string for our where:
 ```java
-ArrayList<IceCreamFlavor> results = database.select(IceCreamFlavor.TABLE_SCHEMA, "NAME = 'Chocolate'", IceCreamFlavor.class);
+ArrayList<IceCreamFlavor> results = database.select(IceCreamFlavor.TABLE_SCHEMA, IceCreamFlavor.class, "NAME = 'Chocolate'");
 if (results.size() == 0) {
     System.out.println("No results!");
     return;
@@ -332,6 +333,92 @@ DatabaseValue[] strawberryDb = results.getValuesForRow(1);
 Notice how we relate the array of DatabaseValue's to "strawberryDb",
 similar to the "Using Objects" example in this section. Are you starting
 to notice a connection between Values and Objects?
+
+### Injection Protection
+Before touching the database, always ensure to protect yourself against injection attacks.
+If you're not sure what that is, check out [this link](https://www.w3schools.com/sql/sql_injection.asp).
+Basically, injection is when you take user input, but the input is parsed as SQL which can destroy
+a database.
+
+Javabase protects from injection by using *prepared statements*, which is basically a way to prepare
+your statement beforehand, then specify what data is being inputted to the database. This tells the database
+that the inputted data should not be parsed as SQL, making injection attacks impossible.
+
+Some functions in Javabase, such as the select statement, allow you to pass 'WHERE' statements
+as the argument. These functions also allow you to pass in 'arguments', which is the equivalent
+as SQL prepared statements, if you are collecting user input.
+
+#### Example: What Not To Do
+In this example, it's fairly simple code that asks the user for their favorite flavor of ice cream,
+with one major catch: it does not have injection protection:
+```java
+Scanner scanner = new Scanner(System.in);
+System.out.print("Insert Favorite Flavor: ");
+String favorite = scanner.nextLine();
+
+ArrayList<IceCreamFlavor> flavors = database.select(IceCreamFlavor.TABLE_SCHEMA, IceCreamFlavor.class, "NAME = '" + favorite + "'");
+for (IceCreamFlavor flavor : flavors) {
+    System.out.println(flavor.getName());
+}
+System.out.println("Returned " + flavors.size() + " flavors.");
+```
+When running this and inputting 'Strawberry', you'll recieve the following output (or something similar):
+```
+Insert Favorite Flavor: Strawberry
+Strawberry
+Returned 1 flavors.
+```
+
+This seems harmless at first. However, what if we were to input something as simple as the following?
+```
+Insert Favorite Flavor: Strawberry' OR 1=1 OR NAME = '
+Chocolate
+Play Dough
+Mint Chocolate
+Strawberry
+Returned 4 flavors.
+```
+
+Well that's not quite what we expected. All the user inputted was some simple code to escape the quotation,
+and now they've managed to list the contents of the entire database. This has some rather horrible effects!
+
+So how do we protect against this?
+
+#### Example: What You Should Do
+In this example, we'll use the same lines of code as before but with one major difference: instead of passing
+our user input as a part of the SQL, we'll use a prepared statement and pass the user input as an argument.
+
+Prepared statements work by inputting all the SQL you need, and anywhere there is user input replace it with a question mark:
+```java
+Scanner scanner = new Scanner(System.in);
+System.out.print("Insert Favorite Flavor: ");
+String favorite = scanner.nextLine();
+
+ArrayList<IceCreamFlavor> flavors = database.select(IceCreamFlavor.TABLE_SCHEMA, IceCreamFlavor.class, "NAME = ?", favorite);
+for (IceCreamFlavor flavor : flavors) {
+    System.out.println(flavor.getName());
+}
+System.out.println("Returned " + flavors.size() + " flavors.");
+```
+
+Now let's run our mischievous code again:
+```
+Insert Favorite Flavor: Strawberry' OR 1=1 OR NAME = '
+Returned 0 flavors.
+```
+
+Perfect! We got no results, which is what we would expect. Now if we run our original statement again:
+```
+Insert Favorite Flavor: Strawberry
+Strawberry
+Returned 1 flavors.
+```
+
+Awesome! We got exactly what we were looking for, except this time we're protected from injection.
+
+#### Important Note
+An important note about using this method is that the amount of arguments must equal exactly the same
+amount of question marks in your statement, otherwise Javabase will error. Please be aware of this!
 
 ### Updating Data
 Updating data is about as simple as selecting data.

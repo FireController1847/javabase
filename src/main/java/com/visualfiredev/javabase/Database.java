@@ -17,6 +17,9 @@ import java.util.Properties;
 /**
  * A generic database that can be used for all database types.
  * TODO: SQLite doesn't cache stuff for us, so we need to add some sort of transaction cache to improve speed.
+ * TODO: Specifying the "WHERE" statements like this sucks. There is possibly a way to generalize all types
+ *       Of statements, which could allow us to allow the user to pass in any statements they want.
+ *       Maybe a statement class with a required 'toString' and then extended by specific types.
  */
 public class Database {
 
@@ -59,8 +62,6 @@ public class Database {
         if (connection != null && this.isConnected()) {
             return this;
         }
-
-        // TODO: Add official support for SQLite and MySQL
 
         // Load Driver
         ClassLoader classloader = this.getClass().getClassLoader();
@@ -313,37 +314,38 @@ public class Database {
      * <p>
      *     It is virtually impossible to provide cross-compatible statements for a "WHERE" expression,
      *     so it is passed as **RAW SQL** in this method.
-     *
+     *     <br><br>
      *     Please keep in mind that the WHERE statement is dependent on which database you are using, so
      *     this method is **not cross-compatible**. Please ensure you know which database you are using,
      *     likely using the {@link Database#getType()} method, when using the "WHERE" clause.
-     *
+     *     <br><br>
+     *     To prevent SQL injection, an extra list of strings is provided which will correspond to '?'
+     *     in the where string.
+     *     <br><br>
      *     If you only want to select certain rows, use the {@link TableSchema#clone()} method and remove
      *     the columns you do not want to include in the result, or create a new {@link TableSchema} with the name
      *     and columns you want to include. They do not need to be exact copies, as long as the names
      *     are exactly the same as what is in the database.
-     *
+     *     <br><br>
      *     If you wish not to include a "WHERE" expression, use {@link Database#selectAll(TableSchema)} instead.
-     *
+     *     <br><br>
      *     Since this is a simple library, at the moment we do not provide functionality to JOIN or select
      *     from multiple tables without having multiple select statements. This may change in the future.
      * </p>
      *
      * @param tableSchema The table and columns to select from.
-     * @param where The platform-dependent SQL statement for a "WHERE" clause.
      * @param limit The limit of the results. Set to -1 to disable.
+     * @param where The platform-dependent SQL statement for a "WHERE" clause.
+     * @param args A list of strings which will not be parsed as SQL. If no arguments pass null.
      * @return A DatabaseResult.
      * @throws NotConnectedException Thrown if there is no connection to the database.
      * @throws SQLException Thrown if running the generated SQL statement failed.
      */
-    public DatabaseResult select(TableSchema tableSchema, String where, int limit) throws NotConnectedException, SQLException {
+    public DatabaseResult select(TableSchema tableSchema, int limit, String where, @Nullable String... args) throws NotConnectedException, SQLException {
         // Ensure Connected
         if (!this.isConnected()) {
             throw new NotConnectedException();
         }
-
-        // Create Statement
-        Statement statement = connection.createStatement();
 
         // Create SQL
         StringBuilder sql = new StringBuilder("SELECT ");
@@ -373,7 +375,25 @@ public class Database {
         // Execute
         ResultSet set;
         try {
-            set = statement.executeQuery(sql.toString());
+            // With Arguments
+            if (args != null && args.length > 0) {
+                // Create Statement
+                PreparedStatement statement = connection.prepareStatement(sql.toString());
+
+                // Apply Arguments
+                int count = Database.countOccurrences(sql.toString(), "?");
+                for (int i = 1; i <= count; i++) {
+                    statement.setString(i, args[i - 1]);
+                }
+
+                // Execute
+                set = statement.executeQuery();
+
+            // Without Arguments
+            } else {
+                // Execute
+                set = connection.createStatement().executeQuery(sql.toString());
+            }
         } catch (SQLException e) {
             throw new SQLException("Invalid TableSchema or possible library error! SQL Statement Created: " + sql, e);
         }
@@ -383,8 +403,23 @@ public class Database {
     }
 
     /**
-     * Selects data from the database using the specified expression with a limit of 100.
-     * See {@link Database#select(TableSchema, String, int)} for more information.
+     * Selects data from the database using the specified expression and arguments with a limit of 100.
+     * See {@link Database#select(TableSchema, int, String, String...)} for more information.
+     *
+     * @param tableSchema The table and columns to select from.
+     * @param where The platform-dependent SQL statement for a "WHERE" clause.
+     * @param args A list of strings which will not be parsed as SQL.
+     * @return A DatabaseResult.
+     * @throws NotConnectedException Thrown if there is no connection to the database.
+     * @throws SQLException Thrown if running the generated SQL statement failed.
+     */
+    public DatabaseResult select(TableSchema tableSchema, String where, String... args) throws NotConnectedException, SQLException {
+        return select(tableSchema, 100, where, args);
+    }
+
+    /**
+     * Selects data from the database using the specified expression and no arguments with a limit of 100.
+     * See {@link Database#select(TableSchema, int, String, String...)} for more information.
      *
      * @param tableSchema The table and columns to select from.
      * @param where The platform-dependent SQL statement for a "WHERE" clause.
@@ -393,28 +428,45 @@ public class Database {
      * @throws SQLException Thrown if running the generated SQL statement failed.
      */
     public DatabaseResult select(TableSchema tableSchema, String where) throws NotConnectedException, SQLException {
-        return select(tableSchema, where, 100);
+        return select(tableSchema, 100, where, null);
     }
 
     /**
-     * Selects data from the database using the specified expression and the specified limit, creating new instances of the specified class.
-     * See {@link Database#select(TableSchema, String, int)} for more information.
+     * Selects data from the database using the specified expression, arguments, and the specified limit, creating new instances of the specified class.
+     * See {@link Database#select(TableSchema, int, String, String...)} for more information.
      *
      * @param tableSchema The table and columns to select from.
-     * @param where The platform-dependent SQL statement for a "WHERE" clause.
      * @param limit The limit of the results. Set to -1 to disable.
      * @param clazz The class to create new instances from.
+     * @param where The platform-dependent SQL statement for a "WHERE" clause.
+     * @param args A list of strings which will not be parsed as SQL.
      * @param <T> The type of object to be returned.
      * @return An ArrayList of the objects.
      * @throws Exception Thrown if there is an error while mapping values for the DatabaseObject.
      */
-    public <T extends DatabaseObject> ArrayList<T> select(TableSchema tableSchema, String where, int limit, Class<T> clazz) throws Exception {
-        return select(tableSchema, where, limit).toObjects(tableSchema, clazz);
+    public <T extends DatabaseObject> ArrayList<T> select(TableSchema tableSchema, int limit, Class<T> clazz, String where, String... args) throws Exception {
+        return select(tableSchema, limit, where, args).toObjects(tableSchema, clazz);
     }
 
     /**
-     * Selects data from the database using the specified expression and a limit of 100, creating new instances of the specified class.
-     * See {@link Database#select(TableSchema, String, int)} for more information.
+     * Selects data from the database using the specified expression, no arguments, and the specified limit, creating new instances of the specified class.
+     * See {@link Database#select(TableSchema, int, String, String...)} for more information.
+     *
+     * @param tableSchema The table and columns to select from.
+     * @param limit The limit of the results. Set to -1 to disable.
+     * @param clazz The class to create new instances from.
+     * @param where The platform-dependent SQL statement for a "WHERE" clause.
+     * @param <T> The type of object to be returned.
+     * @return An ArrayList of the objects.
+     * @throws Exception Thrown if there is an error while mapping values for the DatabaseObject.
+     */
+    public <T extends DatabaseObject> ArrayList<T> select(TableSchema tableSchema, int limit, Class<T> clazz, String where) throws Exception {
+        return select(tableSchema, limit, where, null).toObjects(tableSchema, clazz);
+    }
+
+    /**
+     * Selects data from the database using the specified expression, arguments, and a limit of 100, creating new instances of the specified class.
+     * See {@link Database#select(TableSchema, int, String, String...)} for more information.
      *
      * @param tableSchema The table and columns to select from.
      * @param where The platform-dependent SQL statement for a "WHERE" clause.
@@ -423,8 +475,23 @@ public class Database {
      * @return An ArrayList of the objects.
      * @throws Exception Thrown if there is an error while mapping values for the DatabaseObject.
      */
-    public <T extends DatabaseObject> ArrayList<T> select(TableSchema tableSchema, String where, Class<T> clazz) throws Exception {
-        return select(tableSchema, where, 100).toObjects(tableSchema, clazz);
+    public <T extends DatabaseObject> ArrayList<T> select(TableSchema tableSchema, Class<T> clazz, String where, String... args) throws Exception {
+        return select(tableSchema, 100, where, args).toObjects(tableSchema, clazz);
+    }
+
+    /**
+     * Selects data from the database using the specified expression, no arguments and a limit of 100, creating new instances of the specified class.
+     * See {@link Database#select(TableSchema, int, String, String...)} for more information.
+     *
+     * @param tableSchema The table and columns to select from.
+     * @param where The platform-dependent SQL statement for a "WHERE" clause.
+     * @param clazz The class to create new instances from.
+     * @param <T> The type of object to be returned.
+     * @return An ArrayList of the objects.
+     * @throws Exception Thrown if there is an error while mapping values for the DatabaseObject.
+     */
+    public <T extends DatabaseObject> ArrayList<T> select(TableSchema tableSchema, Class<T> clazz, String where) throws Exception {
+        return select(tableSchema, 100, where, null).toObjects(tableSchema, clazz);
     }
 
     /**
@@ -519,27 +586,25 @@ public class Database {
     }
 
     /**
-     * Deletes data from the database using the specified expression.
+     * Deletes data from the database using the specified expression and arguments.
      *
      * <p>
-     *     Due to the same reasons behind {@link Database#select(TableSchema, String, int)}, the WHERE statement
+     *     Due to the same reasons behind {@link Database#select(TableSchema, int, String, String...)}, the WHERE statement
      *     is up to the user, making this statement **not cross-comtpaible**. Please ensure you know which database
      *     you are using, likely using the {@link Database#getType()} method, when using the "WHERE" clause.
      * </p>
      *
      * @param tableSchema The table to delete from.
      * @param where The platform-dependent SQL statement for a "WHERE" clause.
+     * @param args A list of strings which will not be parsed as SQL. If no arguments pass null.
      * @throws NotConnectedException Thrown if there is no connection to the database.
      * @throws SQLException Thrown if running the generate SQL statement failed.
      */
-    public void delete(TableSchema tableSchema, String where) throws NotConnectedException, SQLException {
+    public void delete(TableSchema tableSchema, String where, @Nullable String... args) throws NotConnectedException, SQLException {
         // Ensure Connected
         if (!this.isConnected()) {
             throw new NotConnectedException();
         }
-
-        // Create Statement
-        Statement statement = connection.createStatement();
 
         // Create SQL
         StringBuilder sql = new StringBuilder("DELETE FROM ").append(tableSchema.getName());
@@ -554,15 +619,42 @@ public class Database {
 
         // Execute
         try {
-            statement.executeUpdate(sql.toString());
+            // Create Statement
+            if (args != null && args.length > 0) {
+                // Create Statement
+                PreparedStatement statement = connection.prepareStatement(sql.toString());
+
+                // Apply Arguments
+                int count = Database.countOccurrences(sql.toString(), "?");
+                for (int i = 1; i <= count; i++) {
+                    statement.setString(i, args[i - 1]);
+                }
+
+                // Execute
+                statement.executeUpdate();
+            } else {
+                connection.createStatement().executeUpdate(sql.toString());
+            }
         } catch (SQLException e) {
             throw new SQLException("Invalid TableSchema or possible library error! SQL Statement Created: " + sql, e);
         }
     }
 
     /**
+     * Deletes data from the database using the specified expression and no arguments.
+     * See {@link Database#delete(TableSchema, String, String...)} for more information.
+     *
+     * @param tableSchema The table to delete every row from.
+     * @throws NotConnectedException Thrown if there is no connection to the database.
+     * @throws SQLException Thrown if running the generate SQL statement failed.
+     */
+    public void delete(TableSchema tableSchema, String where) throws NotConnectedException, SQLException {
+        delete(tableSchema, where, null);
+    }
+
+    /**
      * Deletes every row from the specified table.
-     * See {@link Database#delete(TableSchema, String)} for more information.
+     * See {@link Database#delete(TableSchema, String, String...)} for more information.
      *
      * @param tableSchema The table to delete every row from.
      * @throws NotConnectedException Thrown if there is no connection to the database.
@@ -624,28 +716,26 @@ public class Database {
     }
 
     /**
-     * Updates data in the database using the specified {@link DatabaseValue}'s and the specified 'WHERE' string.
+     * Updates data in the database using the specified {@link DatabaseValue}'s and the specified expression and arguments.
      *
      * <p>
-     *     For the same reasons as {@link Database#select(TableSchema, String, int)}, this method is
+     *     For the same reasons as {@link Database#select(TableSchema, int, String, String...)}, this method is
      *     **not cross-compatible**. It is up to the user to know the type of database they are working
      *     with, likely using the {@link Database#getType()} method, when using the "WHERE" clause.
      * </p>
      *
      * @param tableSchema The table to update.
      * @param where The platform-dependent SQL statement for a "WHERE" clause.
+     * @param args A list of strings which will not be parsed as SQL. If no arguments pass null.
      * @param set An array of {@link DatabaseValue}'s to be set.
      * @throws NotConnectedException Thrown if there is no connection to the database.
      * @throws SQLException Thrown if running the generated SQL statement failed.
      */
-    public void update(TableSchema tableSchema, String where, DatabaseValue... set) throws NotConnectedException, SQLException {
+    public void update(TableSchema tableSchema, String where, @Nullable String[] args, DatabaseValue... set) throws NotConnectedException, SQLException {
         // Ensure Connected
         if (!this.isConnected()) {
             throw new NotConnectedException();
         }
-
-        // Create Statement
-        Statement statement = connection.createStatement();
 
         // Create SQL
         StringBuilder sql = new StringBuilder("UPDATE ").append(tableSchema.getName());
@@ -672,15 +762,43 @@ public class Database {
 
         // Execute
         try {
-            statement.executeUpdate(sql.toString());
+            // Create Statement
+            if (args != null && args.length > 0) {
+                // Create Statement
+                PreparedStatement statement = connection.prepareStatement(sql.toString());
+
+                // Apply Arguments
+                int count = Database.countOccurrences(sql.toString(), "?");
+                for (int i = 1; i <= count; i++) {
+                    statement.setString(i, args[i - 1]);
+                }
+
+                // Execute
+                statement.executeUpdate();
+            } else {
+                connection.createStatement().executeUpdate(sql.toString());
+            }
         } catch (SQLException e) {
             throw new SQLException("Invalid TableSchema or possible library error! SQL Statement Created: " + sql, e);
         }
     }
 
     /**
+     * Updates data in the database using the specified {@link DatabaseValue}'s with the specified expression and no arguments.
+     * See {@link Database#update(TableSchema, String, String[], DatabaseValue...)} for more information.
+     *
+     * @param tableSchema The table to update.
+     * @param set An array of {@link DatabaseValue}'s to be set.
+     * @throws NotConnectedException Thrown if there is no connection to the database.
+     * @throws SQLException Thrown if running the generated SQL statement failed.
+     */
+    public void update(TableSchema tableSchema, String where, DatabaseValue... set) throws NotConnectedException, SQLException {
+        update(tableSchema, where, null, set);
+    }
+
+    /**
      * Updates data in the database using the specified {@link DatabaseValue}'s with no "WHERE" string.
-     * See {@link Database#update(TableSchema, String, DatabaseValue...)} for more information.
+     * See {@link Database#update(TableSchema, String, String[], DatabaseValue...)} for more information.
      *
      * @param tableSchema The table to update.
      * @param set An array of {@link DatabaseValue}'s to be set.
@@ -688,7 +806,7 @@ public class Database {
      * @throws SQLException Thrown if running the generated SQL statement failed.
      */
     public void update(TableSchema tableSchema, DatabaseValue... set) throws NotConnectedException, SQLException {
-        update(tableSchema, "", set);
+        update(tableSchema, "", null, set);
     }
 
     /**
@@ -803,12 +921,18 @@ public class Database {
     }
 
     /**
+     * Fetches a prepared SQL statement from the connection directly. See {@link Connection#prepareStatement(String)}
+     *
+     * @param sql The SQL statement to be prepared.
+     * @return The prepared statement.
+     * @throws SQLException Thrown if something goes wrong.
+     */
+    public PreparedStatement rawPrepare(String sql) throws SQLException {
+        return connection.prepareStatement(sql);
+    }
+
+    /**
      * Returns true if the database is connected, otherwise returns false.
-     * TODO: Cache the result of isValid, that way we can use this in every request made.
-     *       Simply caching for five seconds could drastically improve execution time.
-     *       Of course, that'll mean that there is a period of time where SQL requests
-     *       may timeout instead of isConnected returning false, but I think that's a
-     *       sacrifice I'm willing to make for the sake of performance.
      *
      * @return True if the database is connected, otherwise returns false.
      */
@@ -821,7 +945,9 @@ public class Database {
 
             // Check Connection
             try {
-                connection.setAutoCommit(true);
+                if (connection != null) {
+                    connection.setAutoCommit(true);
+                }
                 isConnected = connection != null && connection.isValid(5); // TODO: HARD-CODED 5 SECOND TIMEOUT
             } catch (SQLException e) {
                 isConnected = false;
@@ -885,6 +1011,22 @@ public class Database {
         }
 
         return string;
+    }
+
+    /**
+     * Utility method to count the number of times the input string occurs in the output string.
+     * @param input
+     * @return
+     */
+    private static int countOccurrences(String input, String item) {
+        int index = input.indexOf(item);
+        int count = 0;
+        while (index != -1) {
+            count++;
+            input = input.substring(index + 1);
+            index = input.indexOf(item);
+        }
+        return count;
     }
 
     /**
